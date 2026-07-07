@@ -1,0 +1,5 @@
+.env
+.venv/
+__pycache__/
+fixtures/.tripwire
+Claude.md
