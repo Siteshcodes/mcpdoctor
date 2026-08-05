@@ -1,16 +1,28 @@
 # mcpdoctor
 
-**An AI-usability linter for MCP servers — plus a chatbot that heals its own broken tool calls.**
+> **An AI-usability linter for MCP servers — plus an interactive chatbot that heals its own broken tool calls.**
 
-I kept watching AI agents fail against MCP servers for the same dumb reasons: a tool
-called `date: string` with no hint whether it wanted `2026-07-06` or "tomorrow"; an
-error that said only `400`; two servers both exposing `search`. So I interviewed the
-model about what actually frustrates it in an MCP server — *when* to pick a tool, how to
-recover from an error, which call is destructive — turned those frustrations into 18
-concrete checks, and then built the fix into the same codebase: a self-healing chat loop.
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![MCP Spec](https://img.shields.io/badge/MCP-v1.8+-8A2BE2.svg)](https://modelcontextprotocol.io/)
+[![LLM Powered](https://img.shields.io/badge/LLM-Groq%20Llama%203.3--70B-orange.svg)](https://groq.com/)
+[![Package Manager](https://img.shields.io/badge/package%20manager-uv-de5b43.svg)](https://docs.astral.sh/uv/)
+[![Checks](https://img.shields.io/badge/linter-18%20checks-purple.svg)](docs/mcpdoctor-check-spec.md)
+[![Tests](https://img.shields.io/badge/tests-116%20passed-brightgreen.svg)](tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-`mcpdoctor` grades a server on one question: **could a model use this correctly on the
-first try, and recover on the second?**
+---
+
+## Overview
+
+AI agents frequently fail when interacting with Model Context Protocol (MCP) servers due to subtle usability oversights:
+- Parameters like `date: string` with zero hints on whether to pass `2026-07-06` or `"tomorrow"`.
+- Cryptic runtime errors like a bare `400` that give the model no guidance on how to fix its call.
+- Dangerous operations (`delete_database`) lacking `destructiveHint` flags.
+- Multiple servers exposing ambiguous, colliding tool names like `search`.
+
+`mcpdoctor` interviews the model about its real-world frustrations, converting those pain points into **18 automated checks** across 6 weighted categories. It grades any MCP server on one fundamental question:
+
+> **"Could an AI model use this server correctly on the first try, and self-heal on the second?"**
 
 ```
 mcpdoctor — badserver (7 tools · 2 resources · 0 prompts)
@@ -32,146 +44,226 @@ Probe safety:
   badserver/delete_everything: active probes skipped for safety
 ```
 
-Full example reports live in [`docs/reports/`](docs/reports/) — the official filesystem
-server, the Anthropic MCP-course document server, and two deliberate fixtures.
-
-## The flagship idea
-
-The self-healing loop in [`heal.py`](src/mcpdoctor/heal.py) is used **twice, as literally the
-same code**:
-
-- **At chat runtime** — when a tool call errors, the loop hands the error + schema to the
-  model, gets corrected arguments, and retries. You see a `[self-healed]` line and the
-  conversation carries on.
-- **At lint time (check T4)** — *"could the heal loop repair this error?"* becomes the
-  empirical measure of error quality. A cryptic `400` can't be repaired → score 0. An
-  error that names the field, the expected format, and the received value gets fixed in
-  one retry → score 2. Empirical beats opinion.
-
-## Install
-
-```bash
-git clone <this-repo> && cd mcpdoctor
-uv sync
-```
-
-A `GROQ_API_KEY` is **optional but recommended**. Set it in `.env`:
-
-```
-GROQ_API_KEY=your-key-here
-```
-
-Without a key, `mcpdoctor` still runs every static and probe check and prints a graded
-report in seconds — the two LLM-judged checks (T1 description quality, T4 error
-repairability) degrade to safe defaults, and the report says so at the top. **A degraded
-grade is a floor, not a final.**
-
-## Usage
-
-### Lint a server
-
-```bash
-uv run mcpdoctor doctor fixtures/badserver.py
-uv run mcpdoctor doctor "npx -y @modelcontextprotocol/server-filesystem ./sandbox"
-uv run mcpdoctor doctor serverA.py serverB.py      # multi-server; findings show server:tool
-```
-
-Servers are given as a `.py` path (run under the project interpreter) or a quoted command
-line for anything else.
-
-| Flag | What it does |
-|------|--------------|
-| `--thorough` | Run all 7 bad-input probe templates per tool instead of the default 3. |
-| `--unsafe` | Also probe destructive-named tools. **Dangerous** — off by default, loudly warned. |
-| `--ascii` | Plain ASCII report instead of the rich card (for consoles that mangle glyphs). |
-| `--md PATH` | Also write the report as markdown (for READMEs / CI). |
-| `--fix` | Print ready-to-paste rewritten tool descriptions for every T1 failure. |
-
-### Chat (with self-healing)
-
-```bash
-uv run mcpdoctor chat fixtures/otherserver.py
-> Call fetch_metrics with the date set to the literal text "July 5th" (do not convert it)
-```
-
-`fetch_metrics` accepts any string, but its body rejects a non-ISO date with a helpful
-error — `date must be YYYY-MM-DD, got 'July 5th'`. The heal loop reads that, proposes
-`2026-07-05`, the retry succeeds, and you see a `[self-healed]` line. Inside a chat you can
-also run `/doctor [servers…] [--thorough]` — with no arguments it lints the servers the
-chat launched with, in **fresh sessions** (a lint must never cancel a request out from
-under your live chat).
-
-> Note: you can't demo healing by forcing a *wrong-typed* argument through the model —
-> Groq validates tool-call arguments against the schema and refuses to emit a type-invalid
-> call at all. The runtime heal needs a schema-valid input the tool *body* then rejects.
-
-## The 18 checks
-
-Grouped into six weighted categories — Error Quality (30), Tool Clarity (25), Safety (15),
-Resources (15), Protocol Hygiene (10), Spec Extras (5). A category with nothing to measure
-is n/a and its weight is redistributed, so a pure-tools server isn't punished for having no
-resources. The full rubric — scoring, probe templates, judge prompts — is in
-[`docs/mcpdoctor-check-spec.md`](docs/mcpdoctor-check-spec.md).
-
-Safety is non-negotiable: tools whose name matches a destructive word (`delete`, `drop`,
-`wipe`, …) or that set `destructiveHint` are **never probe-called** without `--unsafe`;
-every probe uses invalid input designed to be rejected; there's a 10s timeout and a 40-call
-budget per server. A repaired probe is a *valid* call, so at lint time it is only
-re-executed against provably read-only tools — everything else is validated locally so a
-lint never mutates anyone's data.
-
-## What we learned building it
-
-- **Pydantic injects a `title` into every parameter schema.** Our "is this parameter
-  documented?" check counted it as a description until we noticed every tool scoring
-  suspiciously well.
-- **FastMCP validates types *before* your tool body runs** — so a server literally can't
-  accept a wrong-typed argument. The interesting failure isn't bad validation, it's a
-  *declared-but-unenforced* constraint: `date: string` with `format: date` that nothing
-  checks. That's what the garbage-acceptance trap actually catches.
-- **The "harmless" probes weren't.** Two probe templates (`unknown_field`, `huge_string`)
-  can *succeed* — and a successful call against a mutating tool like `write_file` would
-  write junk. They now always carry a hard schema violation, or are skipped entirely when
-  no safe base exists.
-- **A repaired probe is a valid call.** The heal loop that measures error quality had to be
-  taught never to *execute* its repair against a tool that could change state — the read-
-  only gate is load-bearing, not cosmetic.
-- **Validation keeps happening before you can watch the bad call.** Pydantic checks types
-  before the tool body; FastMCP won't accept a mismatched argument; and Groq validates the
-  model's tool call server-side and refuses to emit a type-invalid one. The same lesson at
-  three layers — which is exactly why the interesting failure is a *declared-but-unenforced*
-  constraint, and why the self-heal demo triggers on a body-level error, not a type error.
-
-## How it's built
-
-Python 3.12, [uv](https://docs.astral.sh/uv/), the official `mcp` SDK / FastMCP, Groq
-(`llama-3.3-70b-versatile`) for the two judges, `typer` + `rich` for the CLI. Every check is
-a small async function returning `list[CheckResult]`, registered in one list; no check
-imports another. 116 tests (`uv run pytest -q`), plus opt-in live tests (`-m live`) that
-lint the real filesystem server and prove the probe sweep mutates nothing.
+*Full example reports are available in [`docs/reports/`](docs/reports/) — including official filesystem servers, course servers, and deliberate test fixtures.*
 
 ---
 
-## Devpost
+## System Architecture
 
-**Inspiration.** Every MCP demo shows a model using a *well-built* server. Reality is
-messier — vague descriptions, cryptic errors, unmarked destructive tools. I wanted to
-measure that gap the way the model experiences it, then close it.
+`mcpdoctor` combines static analysis, active schema-aware probing, and LLM-driven usability judging into a unified pipeline. At its core, the **Self-Healing Loop** ([`heal.py`](src/mcpdoctor/heal.py)) serves a dual purpose: powering live chatbot retries and acting as an empirical benchmark for error quality scoring during linting.
 
-**What it does.** Grades any MCP server with 18 checks across six categories and an overall
-letter grade, tells you the top fixes ranked by how many points each recovers, and ships a
-chatbot that self-heals failed tool calls live — the same heal loop that scores error
-quality.
+```mermaid
+graph TD
+    subgraph CLI ["CLI & User Interface (cli.py)"]
+        DOCTOR["mcpdoctor doctor<br/>(Server Linter)"]
+        CHAT["mcpdoctor chat<br/>(Interactive REPL)"]
+    end
 
-**How we built it.** Three engines by trust level: a static inspector (reads only what the
-server declares), a probe engine (calls the server with inputs designed to be rejected,
-under hard safety rules), and two Groq judges at temperature 0. The heal loop is the hinge
-between the linter and the chatbot.
+    subgraph CORE ["Core Client & Connection Layer"]
+        CLIENT["MCP Client Transport<br/>(mcp_client.py)"]
+        RUNNER["Linter Orchestrator<br/>(doctor/runner.py)"]
+    end
 
-**Challenges.** Making the probe engine provably safe (it must never mutate a stranger's
-data); realizing a repaired call is a valid call; keeping a keyless run useful *and* honest
-about being degraded; the quiet gotchas above.
+    subgraph ENGINES ["Inspection Engines"]
+        STATIC["Static Inspector<br/>(checks_static.py)<br/>• Schema & Parameter Descriptions<br/>• Capabilities & Declarations"]
+        PROBE["Active Safe Probe Engine<br/>(checks_probe.py & probes.py)<br/>• Invalid Input Sweeps<br/>• Read-Only Safety Gates"]
+        LLM_JUDGE["LLM Usability Judge<br/>(checks_llm.py & llm.py)<br/>• Groq Llama-3.3-70B<br/>• Description Quality (T1)"]
+    end
 
-**What's next.** A CI mode as a GitHub Action (fail a PR when a server's grade drops); a
-`--model` flag to grade with a Claude judge; the query-middleware idea for R2 to summarize
-oversized resources instead of just flagging them.
+    subgraph HEAL ["Dual-Use Self-Healing Engine"]
+        HEALER["Heal Loop (heal.py)<br/>• Schema-aware Error Repair<br/>• Empirical Error Scoring (T4)<br/>• Live REPL Auto-Fix"]
+    end
+
+    subgraph REPORT ["Scoring & Fix Engine"]
+        REPORTER["Report Generator<br/>(doctor/report.py)<br/>• 6 Category Scores & Grade<br/>• Dynamic Weight Redistribution<br/>• Priority Fix Ranking"]
+    end
+
+    DOCTOR --> CLIENT
+    CHAT --> CLIENT
+    DOCTOR --> RUNNER
+
+    RUNNER --> STATIC
+    RUNNER --> PROBE
+    RUNNER --> LLM_JUDGE
+    RUNNER --> HEALER
+
+    CHAT --> HEALER
+    HEALER --> CLIENT
+
+    STATIC --> REPORTER
+    PROBE --> REPORTER
+    LLM_JUDGE --> REPORTER
+    HEALER --> REPORTER
+```
+
+### Architectural Highlights
+
+1. **Dual-Use Self-Healing Engine ([`heal.py`](src/mcpdoctor/heal.py))**:
+   - **At Chat Runtime**: Intercepts failed tool calls, submits the error trace and schema back to the LLM, extracts corrected parameters, and transparently retries execution.
+   - **At Lint Time (Check T4)**: Benchmarks error quality empirically. If the self-healing loop can repair a broken call from the server's error output in 1 retry, the error gets full points (2/2). Cryptic errors that fail repair score 0.
+2. **Keyless Graceful Degradation**:
+   - Without a `GROQ_API_KEY`, static and probe checks continue running in full. The two LLM-judged checks (T1 description quality, T4 repairability) fall back to safe defaults, explicitly flagging the final grade as a floor score.
+3. **Safety-First Probe Sweeps**:
+   - Destructive tools (matching patterns like `delete`, `drop`, `wipe`, or setting `destructiveHint`) are **never probed** without explicit `--unsafe` flags. Probes execute invalid schema inputs designed for instant rejection. Repaired probe calls are restricted strictly to verified read-only tools.
+
+---
+
+## Key Features
+
+- **18 Comprehensive Usability Checks**: Evaluates Tool Clarity, Error Quality, Safety, Resources, Protocol Hygiene, and Spec Extras.
+- **Empirical Scoring & Dynamic Weights**: Automatically redistributes category weights if primitives (like resources or prompts) are absent, ensuring fair grading.
+- **Prioritized Fix Recommendations**: Ranks suggested fixes by the exact number of points recovered to guide developer fixes efficiently.
+- **Interactive Self-Healing Chat**: Integrated REPL allowing developers to chat with their servers while automatically recovering from schema and parameter errors.
+- **Rich Terminal UI & Flexible Exports**: Beautiful `rich` card layouts in terminal, with ASCII output (`--ascii`) and markdown export (`--md PATH`) support for CI pipelines.
+
+---
+
+## Installation
+
+### Prerequisites
+- Python `^3.12`
+- [`uv`](https://docs.astral.sh/uv/) package manager
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/Siteshcodes/mcpdoctor.git
+cd mcpdoctor
+
+# Install dependencies into a virtual environment
+uv sync
+```
+
+### Environment Configuration
+
+Setting a `GROQ_API_KEY` enables the LLM Judge engine (`llama-3.3-70b-versatile`). Create a `.env` file in the root directory:
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+> **Note**: `mcpdoctor` works out of the box without an API key! Keyless runs complete in seconds and return a floor grade.
+
+---
+
+## Usage
+
+### 1. Lint an MCP Server
+
+Run `mcpdoctor doctor` against a Python script (`.py`) or a shell command launching an MCP server:
+
+```bash
+# Lint a Python MCP server script
+uv run mcpdoctor doctor fixtures/badserver.py
+
+# Lint an NPX-hosted MCP server
+uv run mcpdoctor doctor "npx -y @modelcontextprotocol/server-filesystem ./sandbox"
+
+# Lint multiple servers simultaneously (reports namespaced as server:tool)
+uv run mcpdoctor doctor serverA.py serverB.py
+```
+
+#### CLI Options
+
+| Flag | Description |
+| :--- | :--- |
+| `--thorough` | Execute all 7 bad-input probe templates per tool (default is 3). |
+| `--unsafe` | Probe tools flagged as destructive. **Caution**: Off by default. |
+| `--ascii` | Output plain ASCII report card (useful for legacy terminals/CI logs). |
+| `--md PATH` | Export full lint results as a markdown document to `PATH`. |
+| `--fix` | Print ready-to-copy rewritten tool descriptions for T1 failures. |
+
+---
+
+### 2. Interactive Chat with Self-Healing
+
+Launch an interactive chat session with your MCP server:
+
+```bash
+uv run mcpdoctor chat fixtures/otherserver.py
+```
+
+#### Example Healing Flow
+
+```text
+> Call fetch_metrics with the date set to the literal text "July 5th" (do not convert it)
+
+[mcpdoctor] Calling fetch_metrics(date='July 5th')...
+[mcpdoctor] Tool error: date must be YYYY-MM-DD, got 'July 5th'
+[mcpdoctor] [self-healed] Retrying fetch_metrics(date='2026-07-05')...
+[mcpdoctor] Result: {"metrics": {"status": "ok", "value": 42}}
+```
+
+Inside the chat REPL, you can also execute `/doctor` to run a fresh lint sweep against connected servers without interrupting your active chat session.
+
+---
+
+## Scoring Rubric & The 18 Checks
+
+Servers are evaluated against 6 weighted categories (totaling 100 points):
+
+| Category | Weight | Primary Focus | Key Checks |
+| :--- | :---: | :--- | :--- |
+| **Error Quality** | **30 pts** | Helpfulness and repairability of error outputs | **T4** (Heal loop repairability), **T7** (Garbage acceptance trap) |
+| **Tool Clarity** | **25 pts** | Clear descriptions, triggers, parameter specs | **T1** (Description quality), **T2** (Parameter docs), **T3** (JSON schema valid), **T5** (Name collision), **T6** (Overlapping roles) |
+| **Safety** | **15 pts** | Clear flagging of state-mutating tools | **S1** (Destructive naming without flag), **S2** (Annotations) |
+| **Resources** | **15 pts** | Resource URI structure, mime types, validity | **R1** (URI design), **R2** (Content validity), **R3** (Mime match) |
+| **Protocol Hygiene** | **10 pts** | Capability declaration compliance | **P1** (Declared vs registered primitives), **P2** (Prompt args), **P3** (Empty tools) |
+| **Spec Extras** | **5 pts** | MCP spec enhancement fields | **X1** (Server instructions), **X2** (Icons/Metadata) |
+
+*For complete scoring formulas, probe payload definitions, and prompt templates, refer to the [`docs/mcpdoctor-check-spec.md`](docs/mcpdoctor-check-spec.md).*
+
+---
+
+## Technical Discoveries
+
+Building `mcpdoctor` revealed several crucial insights regarding MCP servers, frameworks, and LLM tool calling:
+
+1. **Pydantic's Implicit `title` Fields**:
+   Pydantic injects a `title` key into parameter JSON schemas by default. Early linter versions falsely marked parameters as "documented" until we explicitly filtered out default title fields.
+2. **FastMCP Pre-Validation**:
+   FastMCP validates primitive types *before* tool logic executes. The real failure vector in production isn't type mismatch, but **declared-but-unenforced constraints** (e.g., `date: string` formatted as `YYYY-MM-DD` that nothing validates until runtime).
+3. **Probe Payload Safety Limits**:
+   "Harmless" probe templates (e.g., `unknown_field`, `huge_string`) can accidentally execute successfully on loose servers. To prevent unwanted mutations, probe calls carry intentional schema violations or are skipped when no safe baseline exists.
+4. **Multi-Layer Validation Boundaries**:
+   Validation occurs across 3 distinct boundaries: Pydantic checks types, FastMCP checks protocol signatures, and Groq/LLM providers validate tool schemas server-side. Demonstrating runtime self-healing requires testing tool-body logic failures rather than simple type mismatches.
+
+---
+
+## Tech Stack & Testing
+
+- **Language & Runtime**: Python `3.12`
+- **Package Manager**: [`uv`](https://docs.astral.sh/uv/)
+- **MCP Framework**: Official `mcp` Python SDK + `FastMCP`
+- **LLM Integration**: `groq` (`llama-3.3-70b-versatile`)
+- **CLI & Formatting**: `typer` + `rich`
+- **Testing**: `pytest` + `pytest-asyncio`
+
+### Running Tests
+
+```bash
+# Run unit & static integration tests (116 tests)
+uv run pytest -q
+
+# Run opt-in live tests against external servers
+uv run pytest -m live
+```
+
+---
+
+## Project Story & Devpost Summary
+
+- **Inspiration**: Demos show AI agents interacting with polished MCP servers. Real-world servers often suffer from vague descriptions, missing parameter formats, and cryptic errors. `mcpdoctor` was created to quantify this usability gap and close it automatically.
+- **What it does**: Grades MCP servers across 18 usability metrics, ranks top fixes by point impact, and provides a self-healing interactive chat runtime.
+- **How it's built**: Built around three trust-bounded engines: a zero-execution Static Inspector, an Active Safe Probe Engine with strict safety boundaries, and an LLM Usability Judge.
+- **Future Roadmap**:
+  - **GitHub Action / CI Integration**: Fail pull requests when a server's grade drops below a threshold.
+  - **Multi-Model Judges**: Add `--model` support for Claude and GPT-4o judges.
+  - **Resource Summarization Middleware**: Middleware to summarize oversized MCP resources before context overflow occurs.
+
+---
+
+## License
+
+Distributed under the [MIT License](LICENSE).
