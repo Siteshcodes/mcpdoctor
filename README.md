@@ -35,6 +35,17 @@ Probe safety:
 Full example reports live in [`docs/reports/`](docs/reports/) — the official filesystem
 server, the Anthropic MCP-course document server, and two deliberate fixtures.
 
+## Documentation
+
+The [mcpdoctor documentation site](https://siteshcodes.github.io/mcp-doctor/) provides
+task-oriented guides for installation, first lint, CLI usage, self-healing chat, report
+interpretation, probe safety, and development. To preview it locally:
+
+```bash
+uv sync --group docs
+uv run mkdocs serve
+```
+
 ## The flagship idea
 
 The self-healing loop in [`heal.py`](src/mcpdoctor/heal.py) is used **twice, as literally the
