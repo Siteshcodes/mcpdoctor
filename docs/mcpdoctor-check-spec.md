@@ -112,7 +112,7 @@ CHECKS: list[Check] = [t1_description_quality, t2_param_docs, ...]
   3. **Empirical repair test:** hand the error text + tool schema + original bad call to `heal.py`. Repaired in 1 retry → 2 · in 2 retries → 1 · not repaired → 0.
 - **Score per tool** = the heal-loop result averaged over probes (round down). The LLM judge (§10) runs once per failing tool only to *write the fix_hint*, not to score — empirical beats opinion.
 - **fix_hint:** `"edit_document: error should name the field, expected format, and received value."`
-- **Lint-time repair safety** — *heal executes retries only when a human intended the call.* At lint time a repaired call is live-executed only if the tool is provably read-only: `readOnlyHint: true` or name tokens ∩ `READ_ONLY_WORDS = {get, list, read, search, fetch, query, show}`. Any other tool has its repaired args validated locally against `inputSchema` (jsonschema) instead, and the result message says "repair validated locally (not executed for safety)". Repair retries count against the probe budget. At chatbot runtime the human intended the call, so heal retries execute for real.
+- **Lint-time repair safety** — *heal executes retries only when a human intended the call.* At lint time a repaired call is live-executed only if the tool is classified read-only: destructive name/annotation signals and an explicit `readOnlyHint: false` always prevent live repair; otherwise `readOnlyHint: true` or name tokens ∩ `READ_ONLY_WORDS = {get, list, read, search, fetch, query, show}`. Any other tool has its repaired args validated locally against `inputSchema` (jsonschema) instead, and the result message says "repair validated locally (not executed for safety)". Repair retries count against the probe budget. At chatbot runtime the human intended the call, so heal retries execute for real.
 
 ### S3 — Response time / hangs
 - **Pain:** a tool that hangs forever kills the whole agent loop; timeouts are the failure mode nobody handles.
@@ -137,8 +137,8 @@ A linter must never nuke someone's data. Non-negotiable defaults:
 1. Tools flagged destructive — by annotation **or** by `DESTRUCTIVE_WORDS` in the name — are **never probe-called**. The skip surfaces as a report-level probe-safety note (`"active probes skipped for safety"`), **not** a scored CheckResult — a score in either direction would distort Error Quality. Skipped tools are n/a for T4.
 2. Everything else gets *invalid inputs only* — probes are designed to be rejected, never to succeed.
 3. `--unsafe` flag opts destructive tools into probing (for people testing their own dev servers). Off by default, loudly labeled.
-4. Global probe budget (e.g. max 40 calls/server) + the 10 s timeout, so `/doctor` can't hammer or hang on anyone's server.
-5. Repaired probe calls (T4's heal test) follow the same rules: live re-execution only for provably read-only tools (see §4's lint-time repair safety), local schema validation otherwise; repair retries count against the budget.
+4. Per-server probe budget (max 40 calls/server) + the 10 s probe timeout; initialization and discovery requests have a 30 s session timeout, so `/doctor` can't hammer or hang on anyone's server.
+5. Repaired probe calls (T4's heal test) follow the same rules: live re-execution only for tools classified read-only (a naming/metadata heuristic, not proof) (see §4's lint-time repair safety), local schema validation otherwise; repair retries count against the budget.
 6. `/doctor` inside the chatbot **never reuses chat sessions**. Lint probes cancel via `asyncio.wait_for` (see §4 timeout mechanics), and a chat session must never have requests cancelled from under it — so the doctor reconnects with fresh sessions from the same server specs, lints, and closes them. Zero lint traffic may cross a chat-owned session.
 
 ---

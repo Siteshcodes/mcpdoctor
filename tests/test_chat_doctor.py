@@ -51,6 +51,29 @@ def test_unknown_command_hints():
     assert "unknown command" in out and "/doctor" in out
 
 
+async def test_doctor_keeps_quoted_server_command_together(monkeypatch):
+    from mcpdoctor.doctor.manifest import Manifest
+    from mcpdoctor.doctor.runner import DoctorRun
+
+    received = []
+
+    async def fake_run(specs, config):
+        received.extend(specs)
+        assert config.thorough
+        return DoctorRun(Manifest([]), [])
+
+    monkeypatch.setattr("mcpdoctor.chatbot.run_doctor_specs", fake_run)
+    chat = Chat(llm=None, clients={})
+    await chat.handle_command('/doctor "python fixtures/otherserver.py" --thorough')
+    assert received == ["python fixtures/otherserver.py"]
+
+
+async def test_doctor_rejects_unknown_options():
+    chat = Chat(llm=None, clients={})
+    assert "unknown /doctor option" in await chat.handle_command("/doctor --typo")
+    assert "invalid command" in await chat.handle_command('/doctor "unclosed')
+
+
 def test_doctor_with_no_specs_says_so():
     chat = Chat(llm=None, clients={}, server_specs=[])
     out = asyncio.run(chat.handle_command("/doctor"))

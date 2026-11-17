@@ -36,7 +36,7 @@ from mcpdoctor.doctor.probes import ProbeConfig
 from mcpdoctor.doctor.report import render_text
 from mcpdoctor.doctor.runner import run_doctor_specs
 from mcpdoctor.llm import GroqLLM
-from mcpdoctor.mcp_client import ConnectError, MCPClient
+from mcpdoctor.mcp_client import ConnectError, MCPClient, split_command
 
 _CALL_TIMEOUT = timedelta(seconds=30)
 
@@ -155,7 +155,12 @@ class Chat:
     async def handle_command(self, text: str) -> str:
         """Handle a /command locally (before the LLM sees it). Returns the text
         to print. Currently: /doctor [specs...] [--thorough]."""
-        parts = text.split()
+        try:
+            parts = split_command(text)
+        except ValueError as exc:
+            return f"invalid command: {exc}"
+        if not parts:
+            return "enter /doctor to lint the connected servers"
         cmd, args = parts[0], parts[1:]
 
         if cmd != "/doctor":
@@ -169,6 +174,9 @@ class Chat:
             )
 
         thorough = "--thorough" in args
+        unknown = [a for a in args if a.startswith("--") and a != "--thorough"]
+        if unknown:
+            return f"unknown /doctor option: {unknown[0]}; supported option: --thorough"
         specs = [a for a in args if not a.startswith("--")] or self.server_specs
         if not specs:
             return "no server specs to lint (this chat launched without any)"

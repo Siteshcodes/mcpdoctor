@@ -77,7 +77,7 @@ def _t4_fix_hint(schema: dict, record: ProbeRecord) -> str:
 def _t1_fix_hint(reason: str, suggestion: str | None) -> str:
     """Carry the judge's suggested_description alongside the reason so Phase-4's
     --fix can re-parse it (interpretation on record)."""
-    if suggestion and suggestion.strip():
+    if isinstance(suggestion, str) and suggestion.strip():
         return f"{reason} | suggested: {suggestion.strip()}"
     return reason
 
@@ -116,8 +116,13 @@ async def t1_description_quality(
             else:
                 judged = _t1_judge(tool.name, description)
                 raw = judged.get("score", 1)
-                score = raw if isinstance(raw, int) and 0 <= raw <= 2 else 1
-                reason = str(judged.get("reason", "judge unparseable"))
+                score = raw if type(raw) is int and 0 <= raw <= 2 else 1
+                raw_reason = judged.get("reason")
+                reason = (
+                    raw_reason.strip()
+                    if isinstance(raw_reason, str) and raw_reason.strip()
+                    else "judge unparseable"
+                )
                 message = reason
                 fix_hint = (
                     None

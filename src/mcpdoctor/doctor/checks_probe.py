@@ -62,10 +62,15 @@ def is_destructive(tool: types.Tool) -> bool:
 
 
 def is_read_only(tool: types.Tool) -> bool:
-    """Spec §4/§5 - provably read-only, so a repaired call is safe to re-run.
-    By annotation OR by name (get/list/read/search/fetch/query/show)."""
-    if tool.annotations is not None and tool.annotations.readOnlyHint is True:
-        return True
+    """Spec §4/§5 read-only heuristic for lint-time repair execution.
+
+    Destructive signals and explicit readOnlyHint=False override read-like
+    names. Otherwise use the annotation or get/list/read/search/fetch/query/show.
+    """
+    if is_destructive(tool):
+        return False
+    if tool.annotations is not None and tool.annotations.readOnlyHint is not None:
+        return tool.annotations.readOnlyHint is True
     return bool(name_tokens(tool.name) & READ_ONLY_WORDS)
 
 
@@ -139,6 +144,7 @@ class _ServerProber:
 
     async def _call(self, kind: str, target: str, coro, **extra) -> ProbeRecord | None:
         if not self._take_budget():
+            coro.close()
             return None
         start = time.monotonic()
         try:

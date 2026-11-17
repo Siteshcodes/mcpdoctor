@@ -5,6 +5,9 @@ import shutil
 
 import pytest
 
+from mcp import types
+from mcpdoctor.doctor.manifest import Manifest, ServerManifest
+
 from mcpdoctor.doctor.checks_llm import t1_description_quality
 
 
@@ -50,6 +53,21 @@ def test_t1_covers_every_tool(badserver_run):
     manifest, results = badserver_run
     tool_names = {t.name for s in manifest.servers for t in s.tools}
     assert {r.target for r in by_id(results, "T1")} == tool_names
+
+
+@pytest.mark.parametrize("suggestion", [123, True, ["rewrite"], {"text": "rewrite"}, None])
+@pytest.mark.parametrize("description", ["Brief.", "Search documents by title when the user needs to find a specific topic."])
+async def test_malformed_judge_fields_do_not_crash(monkeypatch, suggestion, description):
+    monkeypatch.setattr("mcpdoctor.llm.json_call", lambda *a, **k: {
+        "score": True, "reason": None, "suggested_description": suggestion,
+    })
+    server = ServerManifest("s", "s", None, None, tools=[types.Tool(
+        name="search", description=description, inputSchema={"type": "object"},
+    )])
+    results = await t1_description_quality({}, Manifest([server]))
+    assert len(results) == 1
+    assert results[0].score == (0 if description == "Brief." else 1)
+    assert "suggested:" not in results[0].fix_hint
 
 
 @pytest.mark.live

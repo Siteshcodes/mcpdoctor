@@ -1,4 +1,4 @@
-"""MCP connection layer, evolved from legacy/mcp_client.py.
+"""MCP connection layer, evolved from archive/legacy/mcp_client.py.
 
 Changes from legacy (kept deliberately small):
 - connect() keeps the InitializeResult — the doctor reads capabilities,
@@ -7,6 +7,7 @@ Changes from legacy (kept deliberately small):
 """
 
 import json
+import os
 import shlex
 import sys
 from datetime import timedelta
@@ -46,19 +47,48 @@ def root_cause(exc: BaseException) -> str:
     return text or type(exc).__name__
 
 
+def split_command(text: str) -> list[str]:
+    """Split command arguments without consuming Windows path separators.
+
+    Shell operators and variable expansion are deliberately not evaluated.
+    A quoted argument groups spaces on every platform.
+    """
+    if os.name != "nt":
+        return shlex.split(text)
+    parts = shlex.split(text, posix=False)
+    return [
+        p[1:-1] if len(p) >= 2 and p[0] == p[-1] and p[0] in "\"'" else p
+        for p in parts
+    ]
+
+
 def spec_to_command(spec: str) -> tuple[str, list[str]]:
     """A bare .py path runs under this interpreter; anything else is a quoted
     command line, e.g. "npx -y @modelcontextprotocol/server-filesystem .".
     Shared by the doctor and the chatbot so both accept identical specs."""
-    if spec.endswith(".py"):
-        return sys.executable, [spec]
-    command, *args = shlex.split(spec)
+    spec = spec.strip()
+    try:
+        if not spec:
+            raise ValueError("server specification is empty")
+        # A real path can contain unquoted spaces. A command ending in .py
+        # must still be parsed as a command, not mistaken for a filename.
+        if spec.lower().endswith(".py") and Path(spec).is_file():
+            return sys.executable, [spec]
+        parts = split_command(spec)
+        if not parts or not parts[0]:
+            raise ValueError("server command is empty")
+    except (ValueError, OSError) as exc:
+        raise ConnectError(spec, spec, str(exc)) from None
+    command, *args = parts
+    if command.lower().endswith(".py"):
+        return sys.executable, [command, *args]
     return command, args
 
 
 def unique_key(spec: str, taken: set[str]) -> str:
     """A stable, collision-free session key derived from the spec's basename."""
-    base = Path(spec.endswith(".py") and spec or shlex.split(spec)[0]).stem
+    command, args = spec_to_command(spec)
+    base = Path(args[0] if command == sys.executable and args else command).stem
     key, n = base, 1
     while key in taken:
         n += 1
@@ -92,7 +122,7 @@ class MCPClient:
             )
             _stdio, _write = stdio_transport
             self._session = await self._exit_stack.enter_async_context(
-                ClientSession(_stdio, _write)
+                ClientSession(_stdio, _write, read_timeout_seconds=timedelta(seconds=30))
             )
             self._init_result = await self._session.initialize()
         except BaseException:
@@ -116,9 +146,23 @@ class MCPClient:
             )
         return self._init_result
 
+    async def _list_all(self, method: str, field: str) -> list:
+        """Collect every page; reject looping cursors instead of hanging."""
+        fetch = getattr(self.session(), method)
+        items, seen = [], set()
+        result = await fetch()
+        while True:
+            items.extend(getattr(result, field))
+            cursor = result.nextCursor
+            if cursor is None:
+                return items
+            if cursor in seen:
+                raise ValueError(f"{method} returned a repeated pagination cursor")
+            seen.add(cursor)
+            result = await fetch(cursor=cursor)
+
     async def list_tools(self) -> list[types.Tool]:
-        result = await self.session().list_tools()
-        return result.tools
+        return await self._list_all("list_tools", "tools")
 
     async def call_tool(
         self,
@@ -136,20 +180,17 @@ class MCPClient:
         return result
 
     async def list_prompts(self) -> list[types.Prompt]:
-        result = await self.session().list_prompts()
-        return result.prompts
+        return await self._list_all("list_prompts", "prompts")
 
     async def get_prompt(self, prompt_name, args: dict[str, str]):
         result = await self.session().get_prompt(prompt_name, args)
         return result.messages
 
     async def list_resources(self) -> list[types.Resource]:
-        result = await self.session().list_resources()
-        return result.resources
+        return await self._list_all("list_resources", "resources")
 
     async def list_resource_templates(self) -> list[types.ResourceTemplate]:
-        result = await self.session().list_resource_templates()
-        return result.resourceTemplates
+        return await self._list_all("list_resource_templates", "resourceTemplates")
 
     async def read_resource(self, uri: str) -> Any:
         result = await self.session().read_resource(AnyUrl(uri))

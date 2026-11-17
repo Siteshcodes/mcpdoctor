@@ -114,3 +114,19 @@ def test_read_only_classification():
     assert not is_read_only(tool("process"))
     assert not is_read_only(tool("update_record"))
     assert is_read_only(tool("mutate", read_only=True))  # annotation wins
+
+
+@pytest.mark.parametrize("name,annotations", [
+    ("get_and_delete", types.ToolAnnotations(readOnlyHint=True)),
+    ("get_record", types.ToolAnnotations(destructiveHint=True, readOnlyHint=True)),
+    ("get_record", types.ToolAnnotations(readOnlyHint=False)),
+])
+async def test_mutation_signals_override_read_only_names(name, annotations):
+    t = tool(name)
+    t.annotations = annotations
+    assert not is_read_only(t)
+    execute, state = make_repair_executor(
+        ExplodingSession(), _manifest(), ProbeRun(), "s", t, t.inputSchema
+    )
+    assert await execute({"target": "x"}) == (True, "")
+    assert state["executed_live"] is False

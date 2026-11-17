@@ -168,3 +168,18 @@ def test_budget_clamp_stops_calls_and_notes_once():
     assert grants == [True, True, True, False, False]
     exhausted = [n for n in prober.run.notes if "budget exhausted" in n]
     assert len(exhausted) == 1
+
+
+async def test_exhausted_budget_closes_unstarted_coroutine():
+    import inspect
+
+    manifest = _synthetic_manifest()
+    manifest.probe_config = ProbeConfig(budget_per_server=0)
+    prober = _ServerProber(manifest.servers[0], None, manifest, ProbeRun())
+
+    async def must_not_run():
+        raise AssertionError("budget-exhausted call was executed")
+
+    coro = must_not_run()
+    assert await prober._call("resource_read", "data://test", coro) is None
+    assert inspect.getcoroutinestate(coro) == inspect.CORO_CLOSED
