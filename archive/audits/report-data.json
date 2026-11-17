@@ -1,0 +1,62 @@
+[
+  {
+    "id": "T1",
+    "name": "Tool Description Quality",
+    "category": "tool_clarity",
+    "target": "process",
+    "score": 0,
+    "max_score": 2,
+    "severity": "fail",
+    "message": "process: static gate: only 1 words - says what but not when"
+  },
+  {
+    "id": "T4",
+    "name": "Error Repairability",
+    "category": "error_quality",
+    "target": "get_data",
+    "score": 0,
+    "max_score": 2,
+    "severity": "fail",
+    "message": "get_data: errors did not let the heal loop repair the call"
+  },
+  {
+    "id": "S1",
+    "name": "Destructive Naming without Flag",
+    "category": "safety",
+    "target": "delete_everything",
+    "score": 0,
+    "max_score": 2,
+    "severity": "fail",
+    "message": "delete_everything: destructive name but destructiveHint unset"
+  },
+  {
+    "id": "R2",
+    "name": "Resource Content Validity",
+    "category": "resources",
+    "target": "data://config",
+    "score": 0,
+    "max_score": 2,
+    "severity": "fail",
+    "message": "data://config: declared application/json but content is not JSON"
+  },
+  {
+    "id": "P1",
+    "name": "Protocol Capability Alignment",
+    "category": "protocol_hygiene",
+    "target": "badserver",
+    "score": 1,
+    "max_score": 2,
+    "severity": "warn",
+    "message": "prompts capability declared but nothing registered"
+  },
+  {
+    "id": "X1",
+    "name": "Initialize Spec Extras",
+    "category": "spec_extras",
+    "target": "badserver",
+    "score": 0,
+    "max_score": 2,
+    "severity": "fail",
+    "message": "no instructions field in initialize result"
+  }
+]

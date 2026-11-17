@@ -1,0 +1,7 @@
+Check_ID,Check_Name,Category,Target,Score,Max_Score,Severity,Message,Fix_Hint
+T1,Tool Description Quality,tool_clarity,process,0,2,fail,"process: static gate: only 1 words - says what but not when",Rewrite tool description to include clear usage instructions and trigger conditions.
+T4,Error Repairability,error_quality,get_data,0,2,fail,"get_data: errors did not let the heal loop repair the call",error should name the field the expected format and the received value
+S1,Destructive Naming without Flag,safety,delete_everything,0,2,fail,"delete_everything: destructive name but destructiveHint unset",set destructiveHint: true on delete_everything
+R2,Resource Content Validity,resources,data://config,0,2,fail,"data://config: declared application/json but content is not JSON",Ensure content matches declared mime type application/json
+P1,Protocol Capability Alignment,protocol_hygiene,badserver,1,2,warn,"prompts capability declared but nothing registered",register the primitive or drop the capability claim
+X1,Initialize Spec Extras,spec_extras,badserver,0,2,fail,"no instructions field in initialize result",Add instructions field to server initialization metadata
