@@ -1,12 +1,13 @@
 # Roadmap
 
-These items are planned direction, not current CLI behavior:
+Potential improvements, not supported features or delivery commitments:
 
-- GitHub Action mode that fails a pull request when an MCP server grade drops.
-- A configurable `--model` option for alternate judging providers.
-- Query middleware that summarizes oversized resources before they reach the model.
-- Versioned documentation and release notes for rubric changes.
-- Automated documentation examples and link checks in CI.
+- Grade thresholds and stable JSON output for CI.
+- HTTP transport alongside stdio.
+- Namespaced tool routing for multi-server chat.
+- Asynchronous provider calls and additional model backends.
+- More conservative probing and broader real-server compatibility tests.
+- Versioned package releases and a publishing workflow.
 
-The current implementation and safety model should be treated as the source of truth until
-an item is shipped and documented in the CLI reference.
+Propose a focused change in [GitHub issues](https://github.com/Siteshcodes/mcp-doctor/issues)
+with a use case, expected behavior, and reproducible example.

@@ -1,4 +1,4 @@
-site_name: mcpdoctor
+site_name: MCPDoctor
 site_description: AI-usability linter and self-healing chatbot for MCP servers
 site_url: https://siteshcodes.github.io/mcp-doctor/
 repo_url: https://github.com/Siteshcodes/mcp-doctor
@@ -7,8 +7,13 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  custom_dir: docs/overrides
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  font: false
   language: en
   features:
+    - navigation.tabs
     - navigation.sections
     - navigation.top
     - search.highlight
@@ -16,11 +21,15 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to light mode
@@ -32,7 +41,8 @@ markdown_extensions:
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.superfences
-  - pymdownx.tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
   - tables
   - toc:
       permalink: true
@@ -42,6 +52,7 @@ nav:
   - Get started:
       - Installation: getting-started/installation.md
       - First lint: getting-started/first-lint.md
+      - Troubleshooting: getting-started/troubleshooting.md
   - Use mcpdoctor:
       - CLI reference: usage/cli.md
       - Self-healing chat: usage/chat.md
@@ -57,4 +68,19 @@ nav:
       - Probe safety: checks/probe-safety.md
   - Contribute:
       - Development: contributing/development.md
+      - Architecture: contributing/architecture.md
+      - Deployment: contributing/deployment.md
       - Roadmap: contributing/roadmap.md
+
+extra_css:
+  - assets/styles.css
+extra_javascript:
+  - assets/site.js
+exclude_docs: |
+  overrides/
+copyright: Copyright &copy; 2026 Sitesh Gupta · MIT License
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Siteshcodes/mcp-doctor
+      name: MCPDoctor on GitHub

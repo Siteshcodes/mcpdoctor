@@ -1,37 +1,44 @@
 # Self-healing chat
 
-Launch a chat session with one or more servers:
+Configure `GROQ_API_KEY`, then connect the assistant to a fixture:
 
 ```bash
 uv run mcpdoctor chat fixtures/otherserver.py
 ```
 
-When a tool call fails, the loop sends the original arguments, the tool schema, and the
-server error back to the model. It proposes corrected arguments and retries. Successful
-repairs are shown with a `[self-healed]` marker.
-
-For example, a tool may reject `July 5th` with:
+## Try a repair
 
 ```text
-date must be YYYY-MM-DD, got 'July 5th'
+Call fetch_metrics with the date set to the literal text "July 5th". Do not convert it.
 ```
 
-The model can then retry with `2026-07-05`.
+The fixture accepts a string but returns a helpful error if it is not an ISO date.
+When the model emits that call, the healing engine receives the schema, failed arguments,
+and error. It proposes corrected arguments and retries up to twice. Success prints
+`[self-healed]` and returns the real result to the model.
 
-## Run the doctor from chat
+This is an illustrative prompt, not a deterministic transcript. The model may normalize
+the date before calling. Provider-side validation may reject a call before it reaches the
+server. Neither the chosen year nor successful recovery is guaranteed.
 
-Inside a chat, use:
+## Audit during chat
 
 ```text
 /doctor
 /doctor --thorough
 ```
 
-With no arguments, `/doctor` lints the servers used to start the chat. Linting uses fresh
-MCP sessions so probes cannot cancel or interfere with a live conversation.
+Audits open and close fresh connections. They do not send probes through chat-owned
+sessions. `/doctor --unsafe` is refused.
 
-## Limitations
+## Operational limits
 
-The model provider validates tool-call types before the tool body runs. The most useful
-healing examples therefore use schema-valid arguments that the server body rejects, such
-as a badly formatted date, rather than a wrong-typed value.
+- Chat executes real calls and repair retries. A failing tool may already have changed
+  state; use appropriate development data, especially for non-idempotent operations.
+- Tool calls use a 30-second client timeout. Cancellation does not roll back server work.
+- If servers expose the same tool name, chat uses the first one. Audit both to find
+  collisions and qualify names in the servers.
+- API failures are displayed in the REPL; failed turns restore conversation history.
+- Conversation messages, tool schemas, and returned tool text are sent to Groq.
+
+See [troubleshooting](../getting-started/troubleshooting.md).

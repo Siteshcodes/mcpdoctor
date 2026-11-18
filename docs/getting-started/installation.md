@@ -1,38 +1,65 @@
 # Installation
 
+MCPDoctor runs locally and starts MCP servers as child processes using stdio.
+
 ## Requirements
 
-- Python 3.12
-- [uv](https://docs.astral.sh/uv/)
-- An MCP server exposed as a Python script or a command line
-- A `GROQ_API_KEY` for the two optional LLM-judged checks and chat
+- Python **3.12**; the package requires `>=3.12,<3.13`.
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) and Git.
+- Node.js/npm only for targets launched with `npx`.
+- A Groq API key only for LLM judgments, suggested rewrites, and chat.
 
-The key is optional. Without it, static and probe checks still run and the report marks
-LLM-dependent results as degraded.
-
-## Install from source
+## Install from GitHub
 
 ```bash
 git clone https://github.com/Siteshcodes/mcp-doctor.git
 cd mcp-doctor
-uv sync
+uv sync --frozen
+uv run mcpdoctor --help
 ```
 
-For local development of this documentation site:
+If Python 3.12 is missing, run `uv python install 3.12` and repeat the sync.
+These instructions install from source; they do not assume a PyPI release.
 
-```bash
-uv sync --group docs
-uv run mkdocs serve
-```
+## Optional LLM configuration
 
-Open the local URL printed by MkDocs, usually `http://127.0.0.1:8000`.
+=== "Windows PowerShell"
 
-## Configure the optional model key
+    ```powershell
+    Copy-Item .env.example .env
+    notepad .env
+    ```
 
-Create a `.env` file in the project directory:
+=== "macOS / Linux"
+
+    ```bash
+    cp .env.example .env
+    # Open .env in your preferred editor.
+    ```
+
+Set:
 
 ```dotenv
 GROQ_API_KEY=your-key-here
+MODEL=llama-3.3-70b-versatile
 ```
 
-Never commit `.env` or a real API key.
+The CLI loads `.env` through python-dotenv. Existing environment variables take precedence.
+Obtain a key from the [Groq console](https://console.groq.com/keys). Never commit a real key.
+
+Without a key, static checks and probes still work, with a degraded assessment banner.
+An invalid nonempty key attempts API calls and can take longer than an unset key. For
+keyless use, leave the key empty in `.env` and unset any exported value.
+
+!!! note "Data sent to the provider"
+    With a key configured, judging and repair may send descriptions, schemas, arguments,
+    and error text to Groq. Chat also sends conversation messages and tool results.
+
+## Verify
+
+```bash
+uv run mcpdoctor doctor fixtures/otherserver.py --ascii
+```
+
+Expect an `Overall:` line and category scores. A degraded banner is expected without a key.
+Continue with [your first audit](first-lint.md).

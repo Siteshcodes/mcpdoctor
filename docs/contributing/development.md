@@ -1,37 +1,50 @@
 # Development
 
-## Set up
+## Setup and validation
 
 ```bash
-uv sync
+git clone https://github.com/Siteshcodes/mcp-doctor.git
+cd mcp-doctor
+uv sync --frozen --group docs
 uv run pytest -q
+uv run mkdocs build --strict
+uv build
 ```
 
-The default test command excludes live tests that download or launch external servers.
-Run those explicitly when you have the required environment:
+CI tests Python 3.12 on Ubuntu and Windows, builds the package, and validates the site
+with strict warnings. It does not require a Groq secret.
+
+Default tests use local fixtures and mocked LLM responses. They cover command parsing,
+malformed judge fields, pagination, budgets, safety classification, scoring, startup
+failures, and chat-session isolation.
+
+## Live tests
 
 ```bash
 uv run pytest -q -m live
 ```
 
-## Preview the documentation
+These opt-in tests may download the filesystem server through `npx` and contact Groq
+when a key is available. Provider failures can skip the judge test. Mocked tests do not
+establish live provider availability.
 
-Install the optional docs dependency group and start the live-reloading server:
-
-```bash
-uv sync --group docs
-uv run mkdocs serve
-```
-
-Build the static site exactly as CI or GitHub Pages would:
+## Website preview
 
 ```bash
-uv run mkdocs build --strict
+uv run --group docs mkdocs serve
 ```
 
-## Documentation guidelines
+Open the printed URL, usually `http://127.0.0.1:8000`. Content lives under `docs/`;
+the homepage template is `docs/overrides/home.html` and its assets are in `docs/assets/`.
+Generated `site/` output is ignored.
 
-- Prefer task-oriented pages over long undifferentiated references.
-- Keep commands copy-pasteable and verify them against the current CLI.
-- Link to the canonical check specification instead of duplicating detailed scoring rules.
-- Mark roadmap ideas clearly so they are not mistaken for supported behavior.
+## Conventions
+
+- Keep source, tests, docs, and historical artifacts in their dedicated directories.
+- Update `docs/mcpdoctor-check-spec.md` when check behavior changes.
+- Add focused regression coverage; keep network calls out of default tests.
+- Never commit environment files, credentials, caches, or generated artifacts.
+- Use the canonical GitHub and Pages URLs in `mkdocs.yml` and `pyproject.toml`.
+
+The [archive](https://github.com/Siteshcodes/mcp-doctor/tree/main/archive) preserves planning,
+submission assets, audits, and the original prototype. It is excluded from the website and wheel.
