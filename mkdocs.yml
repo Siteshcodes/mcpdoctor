@@ -7,32 +7,19 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  custom_dir: docs/overrides
   logo: assets/logo.svg
   favicon: assets/logo.svg
   font: false
   language: en
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.top
     - search.highlight
     - content.code.copy
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-night
-        name: Switch to light mode
+    scheme: default
+    primary: custom
+    accent: custom
 
 markdown_extensions:
   - admonition
@@ -74,10 +61,6 @@ nav:
 
 extra_css:
   - assets/styles.css
-extra_javascript:
-  - assets/site.js
-exclude_docs: |
-  overrides/
 copyright: Copyright &copy; 2026 Sitesh Gupta · MIT License
 extra:
   social:

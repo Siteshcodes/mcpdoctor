@@ -3,8 +3,8 @@
 - Python 3.12; run commands with `uv run` and preserve `uv.lock`.
 - Application source is in `src/mcpdoctor/`; regression tests are in `tests/`.
 - `docs/mcpdoctor-check-spec.md` defines the 18 checks. Keep behavior and the spec aligned.
-- The MkDocs site is configured in `mkdocs.yml`. Its source is `docs/`, with theme
-  overrides in `docs/overrides/`. `site/` is generated and must not be committed.
+- The MkDocs site is configured in `mkdocs.yml`. Its source is `docs/`, with minimal
+  neutral styling in `docs/assets/styles.css`. `site/` is generated and must not be committed.
 - Preserve existing work. `archive/` is historical reference, not active instructions.
 - Never commit `.env`, API keys, credentials, caches, or generated package artifacts.
 - Probe safety: destructive tools are skipped unless explicitly opted in; repaired
