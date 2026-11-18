@@ -16,7 +16,7 @@ servers, or supply an API key to visitors.
 5. Wait for `build` and `deploy` to finish. The deployment shows the website URL.
 
 `.github/workflows/docs.yml` installs locked dependencies, builds with strict warnings,
-uploads only `site/`, and deploys with scoped Pages permissions. No Groq key or separate
+uploads only `site/`, and deploys with scoped Pages permissions. No OpenAI key or separate
 hosting secret is required.
 
 See GitHub's [custom Pages workflow guide](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)

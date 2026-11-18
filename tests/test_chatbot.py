@@ -1,6 +1,6 @@
 """Chatbot heal wiring: a bad tool call recovers and prints [self-healed].
 
-Everything is faked - no MCP server, no Groq. The point is to prove the
+Everything is faked - no MCP server, no OpenAI. The point is to prove the
 runtime path (tool error -> heal -> visible recovery -> corrected result fed
 back to the model) is wired correctly."""
 

@@ -5,7 +5,6 @@ registered in CHECKS below. Static checks ignore the sessions dict; probe
 checks (Phase 2) route their calls through it. No check imports another.
 """
 
-import os
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable
@@ -101,8 +100,8 @@ _FLOOR = "; grade is a floor, not a final"
 def degraded_banners() -> list[str]:
     """Disclosure banners (spec §11) for a run whose LLM checks degraded to
     safe defaults — either no key up front, or the API failing mid-run."""
-    if not os.getenv("GROQ_API_KEY"):
-        return [f"GROQ_API_KEY not set - T1/T4 degraded to safe defaults{_FLOOR}"]
+    if not llm.has_api_key():
+        return [f"OPENAI_API_KEY not set - T1/T4 degraded to safe defaults{_FLOOR}"]
     events = list(dict.fromkeys(llm.degradation_events()))  # dedup, keep order
     if events:
         return [f"{events[0]} - T1/T4 degraded to safe defaults{_FLOOR}"]

@@ -32,9 +32,16 @@ uv sync --frozen
 uv run mcpdoctor doctor fixtures/otherserver.py
 ```
 
-No API key is required for static checks and probes. Without a Groq key, LLM-dependent checks use fallback values and the report marks the assessment as degraded. Treat the grade as provisional.
+No API key is required for static checks and probes. Without an OpenAI key, LLM-dependent checks use fallback values and the report marks the assessment as degraded. Treat the grade as provisional.
 
-To enable LLM judgments, description suggestions, and chat, copy `.env.example` to `.env` and set `GROQ_API_KEY`. The default model is `llama-3.3-70b-versatile`; `MODEL` overrides it. See [installation](docs/getting-started/installation.md) for platform-specific instructions.
+To enable LLM judgments, description suggestions, and chat, copy `.env.example` to `.env` (or edit your existing `.env`) and set `OPENAI_API_KEY`. The default model is `gpt-5.4-mini`; `OPENAI_MODEL` overrides it. See [installation](docs/getting-started/installation.md) for setup and model requirements.
+
+```dotenv
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-5.4-mini
+```
+
+Migrating from Groq: obtain an OpenAI API key and run `uv sync --frozen`. The old `GROQ_API_KEY` and `MODEL` variables are no longer used; a Groq key cannot authenticate with OpenAI.
 
 ## Usage
 
@@ -51,7 +58,7 @@ uv run mcpdoctor doctor fixtures/badserver.py fixtures/otherserver.py
 # Export findings and suggest description improvements.
 uv run mcpdoctor doctor fixtures/otherserver.py --ascii --md report.md --fix
 
-# Start a chat; requires GROQ_API_KEY.
+# Start a chat; requires OPENAI_API_KEY.
 uv run mcpdoctor chat fixtures/otherserver.py
 ```
 
@@ -91,7 +98,7 @@ Audits execute server code and active requests. Use trusted development servers 
 - Lint-time repair retries execute only for tools classified read-only. Destructive signals and explicit `readOnlyHint: false` override read-like names. Other repairs are validated locally.
 - Classification relies on server metadata and naming; it is not a security boundary. Local validation does not prove a repaired call would succeed.
 - Chat retries execute real calls.
-- With a Groq key, descriptions and relevant schemas, arguments, and error text may be sent to Groq. Chat messages and tool results are also sent to the provider.
+- With an OpenAI key, descriptions and relevant schemas, arguments, and error text may be sent to OpenAI. Chat messages and tool results are also sent to the provider.
 
 See [probe safety](docs/checks/probe-safety.md) and [report interpretation](docs/usage/reports.md).
 
@@ -104,7 +111,7 @@ uv run mkdocs build --strict
 uv run mkdocs serve
 ```
 
-Default tests use local fixtures and mocked LLM calls. Opt-in live tests use `uv run pytest -m live`; they may download an external server or contact Groq.
+Default tests use local fixtures and mocked LLM calls. Opt-in live tests use `uv run pytest -m live`; they may download an external server or contact OpenAI.
 
 ```text
 src/mcpdoctor/     CLI, MCP client, chat, healing, and checks

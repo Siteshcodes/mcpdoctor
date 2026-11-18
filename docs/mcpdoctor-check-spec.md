@@ -12,7 +12,7 @@ Three engines, one result type:
 
 - **Static inspector** — reads what the server *declares* (initialize result, tools/list, resources/list, prompts/list). No LLM, deterministic, fast. Build these first.
 - **Probe engine** — actually calls the server with deliberately broken inputs and measures what comes back.
-- **LLM judge** — Groq at `temperature=0`, fixed rubric, JSON-only output. Used only where quality is subjective (description clarity, error-message helpfulness).
+- **LLM judge** — OpenAI Chat Completions at `temperature=0`, fixed rubric, JSON-only output. The default model is `gpt-5.4-mini`, configured with `OPENAI_MODEL`; authentication uses `OPENAI_API_KEY`. Used only where quality is subjective (description clarity, error-message helpfulness).
 
 ```python
 from dataclasses import dataclass
@@ -164,7 +164,7 @@ A linter must never nuke someone's data. Non-negotiable defaults:
 
 ### R4 — URI template usability
 - **Pain:** the model has to construct URIs from templates itself — easy to malform when parameters are undocumented.
-- **Detect:** for each `resources/templates/list` entry: are template params described? Then instantiate one plausible URI from the template + docs, and try reading it. (Phase 2: instantiation is deterministic — an example URI extracted from the template description, if present. The Groq-instantiation upgrade lands in Phase 3 with the other LLM work; a documented template with no extractable example scores 1, not 0.)
+- **Detect:** for each `resources/templates/list` entry: are template params described? Then instantiate one plausible URI from the template + docs, and try reading it. Instantiation is deterministic: an example URI is extracted from the template description, if present. A documented template with no extractable example scores 1, not 0. LLM-based instantiation is not implemented.
 - **Rubric:** 2 = documented + instantiated read works · 1 = documented only · 0 = undocumented params.
 
 ---
@@ -181,7 +181,7 @@ A linter must never nuke someone's data. Non-negotiable defaults:
 - **Rubric:** 2 = all documented · 1 = some · 0 = none. (Skip → n/a if server has no prompts; don't punish twice, P1 already covers existence.)
 
 ### P3 — Prompt renders
-- **Detect:** `prompts/get` with plausible args → returns valid non-empty `messages`? (Phase 2: args are deterministic typed fillers — every declared argument gets a bland string value. Groq-generated args arrive in Phase 3.)
+- **Detect:** `prompts/get` with plausible args → returns valid non-empty `messages`? Arguments are deterministic typed fillers: every declared argument gets a bland string value. LLM-generated arguments are not implemented.
 - **Rubric:** 2 = renders · 0 = errors. (n/a if no prompts.)
 
 ---
@@ -263,7 +263,7 @@ Parsing rule: strip ```json fences, `json.loads`, and on parse failure retry onc
 - Overall = weighted sum → letter: A ≥ 90 · B ≥ 75 · C ≥ 60 · D ≥ 45 · F below.
 - Categories that are all-n/a (e.g. no resources at all) redistribute their weight proportionally — don't punish a pure tool server for having no resources, but *do* punish declared-but-broken ones.
 - Expect real-world servers to land C/D. A linter with teeth is the story — "even the official filesystem server gets a B-" is a great demo line.
-- **Degraded-run disclosure:** any run where the LLM judges/repair degraded to safe defaults (missing GROQ_API_KEY, or the API failing) must say so prominently at the top of the report — "GROQ_API_KEY not set - T1/T4 degraded to safe defaults; grade is a floor, not a final." A silent degraded grade is misinformation.
+- **Degraded-run disclosure:** any run where the LLM judges/repair degraded to safe defaults (missing OPENAI_API_KEY, or the API failing) must say so prominently at the top of the report — "OPENAI_API_KEY not set - T1/T4 degraded to safe defaults; grade is a floor, not a final." A silent degraded grade is misinformation.
 
 Terminal report sketch (rich):
 

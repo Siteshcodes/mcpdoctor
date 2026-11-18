@@ -11,6 +11,8 @@
   calls must honor destructive signals and explicit `readOnlyHint: false`.
 - Preserve probe budgets, timeouts, and isolation between chat and doctor sessions.
 - Validate code with `uv run pytest -q`; LLM calls are mocked in the default suite.
+- The provider is OpenAI: `OPENAI_API_KEY` and optional `OPENAI_MODEL`. Keep default
+  tests offline and preserve lazy initialization, provider timeouts, and retry bounds.
 - Validate docs with `uv run --group docs mkdocs build --strict`.
 - Live tests are opt-in (`uv run pytest -m live`) and may use external services.
 - GitHub repository: https://github.com/Siteshcodes/mcpdoctor.

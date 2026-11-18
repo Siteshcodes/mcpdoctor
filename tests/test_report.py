@@ -96,7 +96,7 @@ def test_degraded_banner_renders_at_top():
     text = render_text(
         manifest,
         [_result("tool_clarity", 0, "T1")],
-        degraded=["GROQ_API_KEY not set - T1/T4 degraded to safe defaults"],
+        degraded=["OPENAI_API_KEY not set - T1/T4 degraded to safe defaults"],
     )
     assert text.splitlines()[0].startswith("!!")
     assert "degraded to safe defaults" in text
@@ -105,7 +105,7 @@ def test_degraded_banner_renders_at_top():
 def test_rich_card_has_grade_bars_and_qualified_targets(collision_run):
     manifest, results = collision_run
     text = render_rich(
-        manifest, results, degraded=["GROQ_API_KEY not set - degraded"]
+        manifest, results, degraded=["OPENAI_API_KEY not set - degraded"]
     )
     assert "Overall:" in text
     assert "Error Quality" in text and "Spec Extras" in text
@@ -120,7 +120,7 @@ def test_rich_card_has_grade_bars_and_qualified_targets(collision_run):
 def test_markdown_export_has_table_and_qualified_targets(collision_run):
     manifest, results = collision_run
     md = render_markdown(
-        manifest, results, degraded=["GROQ_API_KEY not set - degraded"]
+        manifest, results, degraded=["OPENAI_API_KEY not set - degraded"]
     )
     assert md.startswith("# mcpdoctor")
     assert "| Category | Score | Bar | Worst finding |" in md  # the table header
@@ -160,4 +160,4 @@ def test_fix_blocks_empty_without_suggestions():
     passing = CheckResult(
         "T1", "x", "tool_clarity", "good_tool", 2, 2, "info", "ok", None, "s"
     )
-    assert "needs GROQ_API_KEY" in render_fixes(manifest, [passing])
+    assert "needs OPENAI_API_KEY" in render_fixes(manifest, [passing])

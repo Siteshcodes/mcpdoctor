@@ -1,6 +1,6 @@
 # Self-healing chat
 
-Configure `GROQ_API_KEY`, then connect the assistant to a fixture:
+Configure `OPENAI_API_KEY`, then connect the assistant to a fixture:
 
 ```bash
 uv run mcpdoctor chat fixtures/otherserver.py
@@ -39,6 +39,6 @@ sessions. `/doctor --unsafe` is refused.
 - If servers expose the same tool name, chat uses the first one. Audit both to find
   collisions and qualify names in the servers.
 - API failures are displayed in the REPL; failed turns restore conversation history.
-- Conversation messages, tool schemas, and returned tool text are sent to Groq.
+- Conversation messages, tool schemas, and returned tool text are sent to OpenAI.
 
 See [troubleshooting](../getting-started/troubleshooting.md).

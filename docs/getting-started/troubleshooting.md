@@ -16,18 +16,28 @@ endpoint is not a supported launch target. Unresponsive initialization times out
 
 ## Missing key or degraded assessment
 
-Static checks and probes still work. Set `GROQ_API_KEY` in `.env` for LLM judgments and
+Static checks and probes still work. Set `OPENAI_API_KEY` in `.env` for LLM judgments and
 chat. Exported environment values override `.env`. Invalid keys, network failures, and
 rate limits can also cause fallbacks.
 
-Check the provider account and quota for repeated failures. `MODEL` selects the Groq
-model; it must support the JSON output and tool calls the application uses.
+`OPENAI_MODEL` selects the model; the default is `gpt-5.4-mini`. It must support Chat
+Completions, JSON mode, function calls, and temperature settings. Old `GROQ_API_KEY`
+and `MODEL` values are ignored. Use an OpenAI API key, not a Groq key.
 
-## Chat reports tool_use_failed
+## OpenAI authentication, quota, or model errors
 
-The provider may reject a generated call before it reaches the server. Rephrase so
-argument types match the schema. For the healing example, use a string that passes schema
-validation but fails the fixture's date-format validation.
+| Error | Action |
+| --- | --- |
+| Authentication / 401 | Check `OPENAI_API_KEY`, including exported values that override `.env` |
+| Rate limit / 429 | Wait before retrying; reduce request frequency |
+| `insufficient_quota` / 429 | Check the OpenAI project's API billing and usage limits; waiting alone will not fix exhausted quota |
+| Model not found / access denied | Check `OPENAI_MODEL` and the project's model access and key permissions |
+| Bad request / 400 | Use the default model or verify the selected model's supported parameters and tool schemas |
+| Timeout or connection error | Check connectivity; individual provider requests have a 20-second timeout |
+
+Chat reports provider errors without printing the raw response body and keeps the
+conversation usable after a failed request. Lint checks fall back to safe defaults
+and disclose the failed assessment.
 
 ## A tool is absent from chat
 

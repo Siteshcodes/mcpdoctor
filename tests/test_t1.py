@@ -1,4 +1,4 @@
-"""T1 description quality: static gate + §10 judge. Groq mocked by conftest;
+"""T1 description quality: static gate + §10 judge. OpenAI mocked by conftest;
 one live-marked test exercises the real judge."""
 
 import shutil
@@ -72,19 +72,19 @@ async def test_malformed_judge_fields_do_not_crash(monkeypatch, suggestion, desc
 
 @pytest.mark.live
 def test_t1_judge_live():
-    # Real Groq (requires GROQ_API_KEY). Bypasses the conftest module mock by
-    # driving a fresh GroqLLM directly, so the session mock stays intact.
+    # Real OpenAI (requires OPENAI_API_KEY). Bypasses the conftest module mock by
+    # driving a fresh OpenAILLM directly, so the session mock stays intact.
     import os
 
-    if not os.getenv("GROQ_API_KEY"):
-        pytest.skip("GROQ_API_KEY not set")
+    if not os.getenv("OPENAI_API_KEY"):
+        pytest.skip("OPENAI_API_KEY not set")
 
     from mcpdoctor import llm
     from mcpdoctor.doctor.checks_llm import _T1_JUDGE_PROMPT
-    from mcpdoctor.llm import GroqLLM
+    from mcpdoctor.llm import OpenAILLM
 
     llm.reset_degradation()
-    judge = GroqLLM()
+    judge = OpenAILLM()
     good = judge.json_call(
         _T1_JUDGE_PROMPT.format(
             name="search_docs",
@@ -98,9 +98,9 @@ def test_t1_judge_live():
         default={"score": -1},
     )
     # If the provider itself failed (rate limit / outage), that's not a code
-    # defect — skip rather than fail a flaky live test on Groq's availability.
+    # defect — skip rather than fail a flaky live test on OpenAI's availability.
     if llm.degradation_events():
-        pytest.skip(f"Groq degraded: {llm.degradation_events()[0]}")
+        pytest.skip(f"OpenAI degraded: {llm.degradation_events()[0]}")
 
     assert good.get("score") in (1, 2)
     assert vague.get("score") in (0, 1)

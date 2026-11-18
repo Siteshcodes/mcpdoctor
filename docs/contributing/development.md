@@ -12,7 +12,7 @@ uv build
 ```
 
 CI tests Python 3.12 on Ubuntu and Windows, builds the package, and validates the site
-with strict warnings. It does not require a Groq secret.
+with strict warnings. It does not require an OpenAI secret.
 
 Default tests use local fixtures and mocked LLM responses. They cover command parsing,
 malformed judge fields, pagination, budgets, safety classification, scoring, startup
@@ -24,7 +24,7 @@ failures, and chat-session isolation.
 uv run pytest -q -m live
 ```
 
-These opt-in tests may download the filesystem server through `npx` and contact Groq
+These opt-in tests may download the filesystem server through `npx` and contact OpenAI
 when a key is available. Provider failures can skip the judge test. Mocked tests do not
 establish live provider availability.
 

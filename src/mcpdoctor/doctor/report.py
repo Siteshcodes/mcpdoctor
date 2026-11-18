@@ -376,7 +376,7 @@ def render_fixes(manifest: Manifest, results: list[CheckResult]) -> str:
         by_server.setdefault(r.server, []).append((r.target, suggestion))
 
     if not by_server:
-        return "No T1 description suggestions available (needs GROQ_API_KEY)."
+        return "No T1 description suggestions available (needs OPENAI_API_KEY)."
 
     lines = ["Suggested description rewrites (T1) — paste into your server:"]
     for server, items in by_server.items():

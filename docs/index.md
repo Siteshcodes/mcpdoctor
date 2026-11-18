@@ -18,7 +18,7 @@ uv run mcpdoctor doctor fixtures/otherserver.py
 Static checks and active probes work without an API key. LLM-dependent checks use
 fallback values when a key is unavailable, so the resulting grade is provisional.
 
-For LLM judgments and chat, copy `.env.example` to `.env` and set `GROQ_API_KEY`.
+For LLM judgments and chat, copy `.env.example` to `.env` and set `OPENAI_API_KEY`.
 See [installation](getting-started/installation.md) for platform-specific instructions.
 
 ## Common commands
@@ -47,7 +47,7 @@ Start a chat session:
 uv run mcpdoctor chat fixtures/otherserver.py
 ```
 
-Chat requires a Groq key. Use `/doctor` within chat to audit the connected server
+Chat requires an OpenAI key. Use `/doctor` within chat to audit the connected server
 specifications through fresh sessions.
 
 ## Documentation

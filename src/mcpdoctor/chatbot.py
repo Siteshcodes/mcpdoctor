@@ -10,7 +10,7 @@ timeout, never asyncio.wait_for — a chat session must not be cancelled from
 under the user). On success a visible "[self-healed]" line is printed and the
 corrected result is fed back to the model.
 
-Demo path (needs GROQ_API_KEY):
+Demo path (needs OPENAI_API_KEY):
     uv run mcpdoctor chat fixtures/otherserver.py
     > Call fetch_metrics with the date set to the literal text "July 5th"
       (do not convert it to any other format)
@@ -18,11 +18,8 @@ fetch_metrics accepts any string but its body rejects a non-ISO date with a
 helpful error ("date must be YYYY-MM-DD, got 'July 5th'"); heal reads that,
 proposes "2026-07-05", the retry succeeds, and you see "[self-healed] ...".
 
-Why not force a wrong TYPE (e.g. an int)? Groq validates tool-call arguments
-against the schema server-side and refuses to emit a type-invalid call at all
-(tool_use_failed) — the same "validation happens before you can observe the
-bad call" lesson the linter is built around. So the runtime heal demo needs a
-schema-valid input that the tool BODY rejects.
+Use a schema-valid string that the tool body rejects to demonstrate repair.
+Model-generated tool arguments still need validation by the MCP server.
 """
 
 import asyncio
@@ -30,12 +27,13 @@ import json
 from datetime import timedelta
 
 from mcp.types import CallToolResult, TextContent
+from openai import OpenAIError
 
 from mcpdoctor import heal
 from mcpdoctor.doctor.probes import ProbeConfig
 from mcpdoctor.doctor.report import render_text
 from mcpdoctor.doctor.runner import run_doctor_specs
-from mcpdoctor.llm import GroqLLM
+from mcpdoctor.llm import OpenAILLM, api_error_hint
 from mcpdoctor.mcp_client import ConnectError, MCPClient, split_command
 
 _CALL_TIMEOUT = timedelta(seconds=30)
@@ -52,7 +50,7 @@ def _result_text(result: CallToolResult | None) -> str:
 class Chat:
     def __init__(
         self,
-        llm: GroqLLM,
+        llm: OpenAILLM,
         clients: dict[str, MCPClient],
         server_specs: list[str] | None = None,
     ):
@@ -64,7 +62,7 @@ class Chat:
         self.messages: list = []
 
     async def _tool_index(self) -> tuple[list[dict], dict[str, tuple[MCPClient, dict]]]:
-        """Groq-format tool list + a name -> (client, schema) map, built once
+        """OpenAI-format tool list + a name -> (client, schema) map, built once
         per turn (fixes the legacy re-list-per-call pattern)."""
         tools: list[dict] = []
         index: dict[str, tuple[MCPClient, dict]] = {}
@@ -77,7 +75,7 @@ class Chat:
                         "type": "function",
                         "function": {
                             "name": tool.name,
-                            "description": tool.description,
+                            "description": tool.description or "",
                             "parameters": tool.inputSchema,
                         },
                     }
@@ -209,16 +207,8 @@ class Chat:
                 return
             except Exception as e:  # noqa: BLE001 - keep the chat alive
                 name = type(e).__name__
-                text = str(e)
-                print(f"\n[chat error] {name}: {text[:200]}")
-                if "RateLimit" in name:
-                    print("Groq free-tier limit hit - wait a minute and try again.")
-                elif "tool_use_failed" in text:
-                    print(
-                        "Groq rejected the model's tool call against the schema "
-                        "(e.g. a wrong-typed argument). Rephrase so the arguments "
-                        "match the tool's declared types."
-                    )
+                text = api_error_hint(e) if isinstance(e, OpenAIError) else str(e)[:200]
+                print(f"\n[chat error] {name}: {text}")
                 print()
                 continue
             print(f"\n{reply}\n")

@@ -1,9 +1,9 @@
-"""Groq wrapper (ported from legacy/core/groq.py) plus judge/heal hygiene.
+"""OpenAI Chat Completions wrapper plus judge/heal hygiene.
 
 Two surfaces:
-- GroqLLM.chat(...) — the conversational tool-calling loop for the chatbot.
+- OpenAILLM.chat(...) — the conversational tool-calling loop for the chatbot.
 - json_call(prompt, default=...) — a temperature=0, JSON-only single-shot
-  used by heal.py and the LLM judges. Hygiene per CLAUDE.md hard rules:
+  used by heal.py and the LLM judges. Hygiene per the check specification:
   strip ```json fences, one parse retry, then the caller's safe default.
   It NEVER raises — a judge or heal failure must not crash a run.
 
@@ -15,6 +15,7 @@ import json
 import os
 import re
 
+DEFAULT_MODEL = "gpt-5.4-mini"
 _FENCE_RE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
 
 # Degradation = the completion CALL failing (auth/network/API) — distinct from
@@ -49,34 +50,77 @@ def strip_and_parse(raw: str) -> dict:
     return parsed
 
 
-class GroqLLM:
+def has_api_key() -> bool:
+    return bool(os.getenv("OPENAI_API_KEY", "").strip())
+
+
+def api_error_hint(error: Exception) -> str:
+    """Actionable provider errors without echoing keys or request contents."""
+    from openai import (
+        APIConnectionError,
+        APITimeoutError,
+        AuthenticationError,
+        BadRequestError,
+        NotFoundError,
+        PermissionDeniedError,
+        RateLimitError,
+    )
+
+    if isinstance(error, AuthenticationError):
+        return "OpenAI rejected the API key. Check OPENAI_API_KEY."
+    if isinstance(error, RateLimitError):
+        if error.code == "insufficient_quota":
+            return "OpenAI API quota exhausted. Check your project's billing and usage limits."
+        return "OpenAI rate limit reached. Wait before retrying."
+    if isinstance(error, (NotFoundError, PermissionDeniedError)):
+        return "Check OPENAI_MODEL and your OpenAI project's model access and key permissions."
+    if isinstance(error, APITimeoutError):
+        return "OpenAI timed out. Try again or choose a faster supported model."
+    if isinstance(error, APIConnectionError):
+        return "Could not reach OpenAI. Check your network connection."
+    if isinstance(error, BadRequestError):
+        return (
+            "OpenAI rejected the request. Use an OPENAI_MODEL that supports Chat "
+            "Completions, JSON mode, function calling, and temperature settings."
+        )
+    return "OpenAI request failed. Check the service status and your configuration."
+
+
+class OpenAILLM:
     def __init__(self, model: str | None = None):
-        self.model = model or os.getenv("MODEL", "llama-3.3-70b-versatile")
+        self.model = (model or os.getenv("OPENAI_MODEL", "")).strip() or DEFAULT_MODEL
         self._client = None
 
     @property
     def client(self):
-        # Lazy: importing/constructing Groq needs no API key until first call,
+        # Lazy: constructing this wrapper needs no API key until first call,
         # and keyless test runs never touch this path. max_retries=0 so a
         # missing/invalid key degrades in seconds, not minutes of backoff
         # across every judge call (the keyless-run speed matters — spec §11).
+        if not has_api_key():
+            raise RuntimeError("OPENAI_API_KEY not set")
         if self._client is None:
-            from groq import Groq
+            from openai import OpenAI
 
-            self._client = Groq(max_retries=0, timeout=20.0)
+            self._client = OpenAI(
+                api_key=os.environ["OPENAI_API_KEY"].strip(),
+                max_retries=0,
+                timeout=20.0,
+            )
         return self._client
 
     def _complete(self, prompt: str) -> str:
         # Fail fast when there's no key at all: skip the network entirely so a
         # keyless lint returns safe defaults immediately instead of waiting on
         # doomed API calls for every tool.
-        if not os.getenv("GROQ_API_KEY"):
-            raise RuntimeError("GROQ_API_KEY not set")
         completion = self.client.chat.completions.create(
             model=self.model,
             temperature=0,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=1024,
+            messages=[
+                {"role": "system", "content": "Return only a valid JSON object."},
+                {"role": "user", "content": prompt},
+            ],
             response_format={"type": "json_object"},
         )
         return completion.choices[0].message.content or ""
@@ -104,7 +148,7 @@ class GroqLLM:
     def chat(self, messages, tools=None, temperature=1.0):
         params = {
             "model": self.model,
-            "max_tokens": 8000,
+            "max_completion_tokens": 8000,
             "messages": messages,
             "temperature": temperature,
         }
@@ -114,13 +158,13 @@ class GroqLLM:
         return completion.choices[0].message
 
 
-_default_llm: GroqLLM | None = None
+_default_llm: OpenAILLM | None = None
 
 
-def _get_llm() -> GroqLLM:
+def _get_llm() -> OpenAILLM:
     global _default_llm
     if _default_llm is None:
-        _default_llm = GroqLLM()
+        _default_llm = OpenAILLM()
     return _default_llm
 
 

@@ -49,7 +49,7 @@ def _valid_args_from_schema(schema: dict) -> dict:
 
 
 def _fake_json_call(prompt: str, *, default: dict) -> dict:
-    """Stands in for Groq across the whole suite. Dispatches on the prompt so
+    """Stands in for OpenAI across the whole suite. Dispatches on the prompt so
     heal, the T4 fix_hint judge, and the T1 judge each get a plausible,
     deterministic reply - the real check code runs unchanged."""
     if "grading an MCP tool description" in prompt:
@@ -69,7 +69,7 @@ def _fake_json_call(prompt: str, *, default: dict) -> dict:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _mock_groq():
+def _mock_openai():
     """No test hits the network. Individual tests may still monkeypatch
     llm.json_call for their own scenarios; this is the default."""
     from _pytest.monkeypatch import MonkeyPatch

@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
+from mcpdoctor.llm import has_api_key
 from mcpdoctor.doctor.probes import ProbeConfig
 from mcpdoctor.doctor.report import (
     print_report,
@@ -105,7 +106,7 @@ def doctor(
 
 async def _chat(specs: list[str]) -> None:
     from mcpdoctor.chatbot import Chat
-    from mcpdoctor.llm import GroqLLM
+    from mcpdoctor.llm import OpenAILLM
 
     from mcpdoctor.mcp_client import root_cause
 
@@ -122,7 +123,7 @@ async def _chat(specs: list[str]) -> None:
                     spec, " ".join([command, *args]), root_cause(e)
                 ) from None
             clients[key] = client
-        await Chat(GroqLLM(), clients, server_specs=specs).repl()
+        await Chat(OpenAILLM(), clients, server_specs=specs).repl()
 
 
 @app.command()
@@ -131,7 +132,14 @@ def chat(
         ..., help="MCP servers to chat against: Python script paths or quoted commands"
     ),
 ) -> None:
-    """Chat against MCP servers with self-healing tool calls (needs GROQ_API_KEY)."""
+    """Chat against MCP servers with self-healing tool calls (needs OPENAI_API_KEY)."""
+    if not has_api_key():
+        typer.secho(
+            "OPENAI_API_KEY not set. Add it to .env or your environment to use chat.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1)
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
     try:

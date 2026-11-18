@@ -2,11 +2,11 @@
 safe default, never raises. Exercised through an injected completion fn so no
 network is touched."""
 
-from mcpdoctor.llm import GroqLLM, strip_and_parse
+from mcpdoctor.llm import OpenAILLM, strip_and_parse
 
 
 def make_llm(*responses):
-    """A GroqLLM whose _complete yields the given raw strings in order (a
+    """An OpenAILLM whose _complete yields the given raw strings in order (a
     trailing response repeats). Exceptions can be embedded as instances."""
     calls = {"i": 0}
 
@@ -18,7 +18,7 @@ def make_llm(*responses):
             raise value
         return value
 
-    llm = GroqLLM.__new__(GroqLLM)
+    llm = OpenAILLM.__new__(OpenAILLM)
     llm.model = "test"
     llm._client = None
     llm._complete = _complete  # type: ignore[method-assign]

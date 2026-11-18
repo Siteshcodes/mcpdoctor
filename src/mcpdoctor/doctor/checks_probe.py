@@ -102,7 +102,7 @@ _URI_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.\-]*://[^\s'\"()]+")
 
 def example_uri_for(template: types.ResourceTemplate) -> str | None:
     """Deterministic R4 instantiation: a URI in the template's own
-    description that matches the template's shape (Groq upgrade in Phase 3)."""
+    description that matches the template's shape; no LLM call is made."""
     escaped = re.escape(template.uriTemplate)
     pattern = re.sub(r"\\\{\w+\\\}", lambda m: r"[^/\s]+", escaped)
     shape = re.compile(f"^{pattern}$")
