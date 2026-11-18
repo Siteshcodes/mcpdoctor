@@ -7,8 +7,8 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  logo: assets/logo.svg
-  favicon: assets/logo.svg
+  logo: assets/mark.svg
+  favicon: assets/mark.svg
   font: false
   language: en
   features:
@@ -60,7 +60,7 @@ nav:
       - Roadmap: contributing/roadmap.md
 
 extra_css:
-  - assets/styles.css
+  - assets/documentation.css
 copyright: Copyright &copy; 2026 Sitesh Gupta · MIT License
 extra:
   social:

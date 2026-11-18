@@ -36,7 +36,7 @@ uv run --group docs mkdocs serve
 
 Open the printed URL, usually `http://127.0.0.1:8000`. Content lives under `docs/`.
 The homepage is ordinary Markdown in `docs/index.md`; neutral styling lives in
-`docs/assets/styles.css`. Keep the layout simple and focused on documentation.
+`docs/assets/documentation.css`. Keep the layout simple and focused on documentation.
 Generated `site/` output is ignored.
 
 ## Conventions
