@@ -1,8 +1,8 @@
 site_name: MCPDoctor
 site_description: AI-usability linter and self-healing chatbot for MCP servers
-site_url: https://siteshcodes.github.io/mcp-doctor/
-repo_url: https://github.com/Siteshcodes/mcp-doctor
-repo_name: Siteshcodes/mcp-doctor
+site_url: https://siteshcodes.github.io/mcpdoctor/
+repo_url: https://github.com/Siteshcodes/mcpdoctor
+repo_name: Siteshcodes/mcpdoctor
 edit_uri: edit/main/docs/
 
 theme:
@@ -65,5 +65,5 @@ copyright: Copyright &copy; 2026 Sitesh Gupta · MIT License
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Siteshcodes/mcp-doctor
+      link: https://github.com/Siteshcodes/mcpdoctor
       name: MCPDoctor on GitHub

@@ -9,5 +9,5 @@ Potential improvements, not supported features or delivery commitments:
 - More conservative probing and broader real-server compatibility tests.
 - Versioned package releases and a publishing workflow.
 
-Propose a focused change in [GitHub issues](https://github.com/Siteshcodes/mcp-doctor/issues)
+Propose a focused change in [GitHub issues](https://github.com/Siteshcodes/mcpdoctor/issues)
 with a use case, expected behavior, and reproducible example.

@@ -13,4 +13,4 @@
 - Validate code with `uv run pytest -q`; LLM calls are mocked in the default suite.
 - Validate docs with `uv run --group docs mkdocs build --strict`.
 - Live tests are opt-in (`uv run pytest -m live`) and may use external services.
-- GitHub repository: https://github.com/Siteshcodes/mcp-doctor.
+- GitHub repository: https://github.com/Siteshcodes/mcpdoctor.

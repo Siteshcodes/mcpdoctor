@@ -3,8 +3,8 @@
 Use Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/Siteshcodes/mcp-doctor.git
-cd mcp-doctor
+git clone https://github.com/Siteshcodes/mcpdoctor.git
+cd mcpdoctor
 uv sync --frozen --group docs
 uv run pytest -q
 uv run mkdocs build --strict

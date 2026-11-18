@@ -9,8 +9,8 @@ includes a chatbot that can retry failed tool calls with corrected arguments.
 Requires Git, Python 3.12, and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
-git clone https://github.com/Siteshcodes/mcp-doctor.git
-cd mcp-doctor
+git clone https://github.com/Siteshcodes/mcpdoctor.git
+cd mcpdoctor
 uv sync --frozen
 uv run mcpdoctor doctor fixtures/otherserver.py
 ```
@@ -76,6 +76,6 @@ documentation; the CLI runs on your machine.
 
 ## Project
 
-[Source code](https://github.com/Siteshcodes/mcp-doctor) ·
-[Report an issue](https://github.com/Siteshcodes/mcp-doctor/issues) ·
-[MIT license](https://github.com/Siteshcodes/mcp-doctor/blob/main/LICENSE)
+[Source code](https://github.com/Siteshcodes/mcpdoctor) ·
+[Report an issue](https://github.com/Siteshcodes/mcpdoctor/issues) ·
+[MIT license](https://github.com/Siteshcodes/mcpdoctor/blob/main/LICENSE)

@@ -2,14 +2,14 @@
 
 The static MkDocs Material website is hosted on **GitHub Pages**:
 
-**[siteshcodes.github.io/mcp-doctor](https://siteshcodes.github.io/mcp-doctor/)**
+**[siteshcodes.github.io/mcpdoctor](https://siteshcodes.github.io/mcpdoctor/)**
 
 The CLI runs on each user's machine. Publishing docs does not host Python, execute MCP
 servers, or supply an API key to visitors.
 
 ## One-time setup
 
-1. Open [the repository](https://github.com/Siteshcodes/mcp-doctor).
+1. Open [the repository](https://github.com/Siteshcodes/mcpdoctor).
 2. Open **Settings → Pages**.
 3. Select **GitHub Actions** under **Build and deployment**.
 4. Open **Actions → Deploy documentation → Run workflow**, choosing `main`.

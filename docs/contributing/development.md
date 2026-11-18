@@ -3,8 +3,8 @@
 ## Setup and validation
 
 ```bash
-git clone https://github.com/Siteshcodes/mcp-doctor.git
-cd mcp-doctor
+git clone https://github.com/Siteshcodes/mcpdoctor.git
+cd mcpdoctor
 uv sync --frozen --group docs
 uv run pytest -q
 uv run mkdocs build --strict
@@ -47,5 +47,5 @@ Generated `site/` output is ignored.
 - Never commit environment files, credentials, caches, or generated artifacts.
 - Use the canonical GitHub and Pages URLs in `mkdocs.yml` and `pyproject.toml`.
 
-The [archive](https://github.com/Siteshcodes/mcp-doctor/tree/main/archive) preserves planning,
+The [archive](https://github.com/Siteshcodes/mcpdoctor/tree/main/archive) preserves planning,
 submission assets, audits, and the original prototype. It is excluded from the website and wheel.

@@ -12,8 +12,8 @@ MCPDoctor runs locally and starts MCP servers as child processes using stdio.
 ## Install from GitHub
 
 ```bash
-git clone https://github.com/Siteshcodes/mcp-doctor.git
-cd mcp-doctor
+git clone https://github.com/Siteshcodes/mcpdoctor.git
+cd mcpdoctor
 uv sync --frozen
 uv run mcpdoctor --help
 ```

@@ -2,14 +2,14 @@
 
 **Build MCP servers that AI agents can understand, use, and recover with.**
 
-[![CI](https://github.com/Siteshcodes/mcp-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Siteshcodes/mcp-doctor/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-get_started-286448)](https://siteshcodes.github.io/mcp-doctor/)
+[![CI](https://github.com/Siteshcodes/mcpdoctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Siteshcodes/mcpdoctor/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-get_started-286448)](https://siteshcodes.github.io/mcpdoctor/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 MCPDoctor is a command-line usability linter for [Model Context Protocol](https://modelcontextprotocol.io/) servers, paired with a chatbot that can repair failed tool calls. It evaluates descriptions, parameters, error recovery, resources, prompts, and protocol behavior through **18 checks across six weighted categories**.
 
-[Documentation](https://siteshcodes.github.io/mcp-doctor/) · [Quick start](#quick-start) · [Check specification](docs/mcpdoctor-check-spec.md) · [Issues](https://github.com/Siteshcodes/mcp-doctor/issues)
+[Documentation](https://siteshcodes.github.io/mcpdoctor/) · [Quick start](#quick-start) · [Check specification](docs/mcpdoctor-check-spec.md) · [Issues](https://github.com/Siteshcodes/mcpdoctor/issues)
 
 ## What it does
 
@@ -26,8 +26,8 @@ MCPDoctor launches local **stdio servers**. Direct HTTP/SSE connections are not 
 Requirements: Git, Python **3.12**, and [uv](https://docs.astral.sh/uv/getting-started/installation/). Node.js/npm is needed only for servers launched through `npx`.
 
 ```bash
-git clone https://github.com/Siteshcodes/mcp-doctor.git
-cd mcp-doctor
+git clone https://github.com/Siteshcodes/mcpdoctor.git
+cd mcpdoctor
 uv sync --frozen
 uv run mcpdoctor doctor fixtures/otherserver.py
 ```
@@ -119,7 +119,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [architecture](docs/contributing/archite
 
 ## Documentation hosting
 
-MkDocs Material builds the website at **https://siteshcodes.github.io/mcp-doctor/**. Enable **Settings → Pages → Build and deployment → GitHub Actions** once. Pushes to `main` that change site inputs then deploy automatically. Generated `site/` output stays out of Git.
+MkDocs Material builds the website at **https://siteshcodes.github.io/mcpdoctor/**. Enable **Settings → Pages → Build and deployment → GitHub Actions** once. Pushes to `main` that change site inputs then deploy automatically. Generated `site/` output stays out of Git.
 
 GitHub Pages serves documentation; the Python CLI runs locally. The [deployment guide](docs/contributing/deployment.md) covers setup, custom domains, and troubleshooting.
 
