@@ -134,6 +134,11 @@ async def test_openai_tools_repair_and_doctor_keep_chat_usable(live_openai, monk
         repairs = [r for r in run.results if r.id == "T4"]
         assert {r.target for r in repairs} == {"fetch_metrics", "search"}
         assert all(r.score == 2 and "(live)" in r.message for r in repairs)
+        fixed = [r for r in run.results if r.id in {"T5", "R5", "S2"}]
+        assert {r.id for r in fixed} == {"T5", "R5", "S2"}
+        assert all(r.score == 2 and r.severity == "info" for r in fixed)
+        assert all(r.severity == "info" for r in run.results), report
+        assert overall_score(run.results) == 100, report
         assert all(
             used <= run.manifest.probe_config.budget_per_server
             for used in run.manifest._probe_run.budget_used.values()
@@ -162,3 +167,4 @@ async def test_openai_tools_repair_and_doctor_keep_chat_usable(live_openai, monk
             "degraded": run.degraded,
             "chat_session_preserved": True,
         }), flush=True)
+        print(report, flush=True)

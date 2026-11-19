@@ -18,6 +18,12 @@ Default tests use local fixtures and mocked LLM responses. They cover command pa
 malformed judge fields, pagination, budgets, safety classification, scoring, startup
 failures, and chat-session isolation.
 
+The `otherserver.py` fixture includes two read-only tools, three listed text resources,
+a resource template, and a prompt. Its protocol tests verify subscriptions, unsubscribe,
+content updates, list-change notifications, invalid URIs, and cleanup on disconnect.
+The catalog stays unchanged during normal use. Its internal `publish_item` helper lets
+tests exercise notifications without exposing a mutating tool to the model.
+
 ## Live tests
 
 ```bash
@@ -37,7 +43,9 @@ uv run pytest -m live tests/test_live_openai.py -v -s
 This test loads your local `.env` and uses real OpenAI requests against
 `fixtures/otherserver.py`. It verifies tool results, injects a bad date to test repair,
 audits through fresh sessions, checks the probe budget, and calls a tool again through
-the original chat session. It makes at most 32 OpenAI requests and requires API quota.
+the original chat session. It also requires the fixture's T5, R5, and S2 findings to pass
+and the live audit to score 100 without warnings. It makes at most 32 OpenAI requests
+and requires API quota.
 Missing credentials skip the test; provider failures or degraded audits fail it.
 The default suite excludes this test and mocks its provider calls elsewhere.
 

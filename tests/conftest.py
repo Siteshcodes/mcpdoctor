@@ -109,6 +109,11 @@ def badserver_run() -> tuple[Manifest, list[CheckResult]]:
 
 
 @pytest.fixture(scope="session")
+def otherserver_run() -> tuple[Manifest, list[CheckResult]]:
+    return run_doctor("otherserver.py")
+
+
+@pytest.fixture(scope="session")
 def collision_run() -> tuple[Manifest, list[CheckResult]]:
     TRIPWIRE.unlink(missing_ok=True)
     return run_doctor("badserver.py", "otherserver.py")
