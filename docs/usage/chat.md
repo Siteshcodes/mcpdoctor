@@ -36,6 +36,8 @@ sessions. `/doctor --unsafe` is refused.
 - Chat executes real calls and repair retries. A failing tool may already have changed
   state; use appropriate development data, especially for non-idempotent operations.
 - Tool calls use a 30-second client timeout. Cancellation does not roll back server work.
+- Malformed JSON, non-object arguments, and non-finite numbers are rejected before
+  execution. The model receives a tool error and can submit corrected arguments.
 - If servers expose the same tool name, chat uses the first one. Audit both to find
   collisions and qualify names in the servers.
 - API failures are displayed in the REPL; failed turns restore conversation history.

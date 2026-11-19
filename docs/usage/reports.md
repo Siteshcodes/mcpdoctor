@@ -39,7 +39,13 @@ It does not prove that the server would accept or successfully execute the call.
 Skipped tools and budget-limited probes are not evidence of passing behavior.
 
 Top fixes estimate recoverable points under the current findings and category denominators.
+Gains retain up to two decimal places; positive gains below 0.01 are shown as `<0.01`.
+Their displayed sum can differ slightly from the actual total improvement because of rounding.
 Changing the server inventory can change the weights in a later report.
+
+Resource templates can be audited even when the server lists no static resources.
+Those findings appear under R4. Subscription support (R5) contributes to Spec Extras,
+so its warning can coexist with a Resources category score of 100%.
 
 ## Example reports
 

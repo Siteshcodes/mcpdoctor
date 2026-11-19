@@ -259,6 +259,8 @@ Parsing rule: strip ```json fences, `json.loads`, and on parse failure retry onc
 ## 11. Scoring model
 
 - Every check scores 0/1/2 per target; category score = points ÷ max, as %.
+- Top-fix gains use the unrounded overall-score delta and display up to two decimal
+  places; positive gains below 0.01 display as `<0.01`, never as zero.
 - **Weights:** Error Quality 30 · Tool Clarity 25 · Safety 15 · Resources 15 · Protocol Hygiene 10 · Spec Extras 5.
 - Overall = weighted sum → letter: A ≥ 90 · B ≥ 75 · C ≥ 60 · D ≥ 45 · F below.
 - Categories that are all-n/a (e.g. no resources at all) redistribute their weight proportionally — don't punish a pure tool server for having no resources, but *do* punish declared-but-broken ones.

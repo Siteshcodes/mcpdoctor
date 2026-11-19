@@ -4,6 +4,8 @@ Phase 2, so a synthetic pure-tool manifest covers the n/a display path."""
 
 import re
 
+import pytest
+
 from mcpdoctor.doctor.manifest import Manifest, ServerManifest
 from mcpdoctor.doctor.report import (
     display_target,
@@ -161,3 +163,35 @@ def test_fix_blocks_empty_without_suggestions():
         "T1", "x", "tool_clarity", "good_tool", 2, 2, "info", "ok", None, "s"
     )
     assert "needs OPENAI_API_KEY" in render_fixes(manifest, [passing])
+
+
+@pytest.mark.parametrize("render", [render_text, render_rich, render_markdown])
+def test_fix_gains_keep_fractional_points(render):
+    manifest = Manifest([ServerManifest("s", "s", None, None)])
+    results = [_result(category, 2, "pass") for category in (
+        "error_quality", "tool_clarity", "resources", "protocol_hygiene",
+    )]
+    results += [
+        CheckResult("T5", "safety", "safety", "s", 1, 2, "warn", "", "add annotations"),
+        CheckResult("R5", "subscriptions", "spec_extras", "s", 0, 2, "warn", "", "add subscriptions"),
+        CheckResult("S2", "instructions", "spec_extras", "s", 1, 2, "warn", "", "expand instructions"),
+        _result("spec_extras", 2, "P1"),
+    ]
+    text = render(manifest, results)
+    assert "90/100" in text
+    # The previous +8, +2, +1 display overstated the ten recoverable points.
+    for gain in ("(+7.5)", "(+1.67)", "(+0.83)"):
+        assert gain in text
+
+
+@pytest.mark.parametrize("render", [render_text, render_rich, render_markdown])
+def test_small_positive_fix_gain_does_not_render_as_zero(render):
+    manifest = Manifest([ServerManifest("s", "s", None, None)])
+    results = [_result(category, 2, "pass") for category in (
+        "error_quality", "tool_clarity", "safety", "resources", "protocol_hygiene",
+    )]
+    results += [_result("spec_extras", 2, "P1") for _ in range(600)]
+    results.append(CheckResult("S2", "x", "spec_extras", "s", 1, 2, "warn", "", "fix"))
+    text = render(manifest, results)
+    assert "(<0.01)" in text
+    assert "(+0)" not in text

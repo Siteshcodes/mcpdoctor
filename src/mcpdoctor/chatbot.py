@@ -47,6 +47,17 @@ def _result_text(result: CallToolResult | None) -> str:
     )
 
 
+def _parse_tool_arguments(raw: str) -> dict:
+    """Reject malformed arguments without converting them into an executable call."""
+    def reject_constant(value: str):
+        raise ValueError(f"{value} is not a valid JSON constant")
+
+    args = json.loads(raw, parse_constant=reject_constant)
+    if not isinstance(args, dict):
+        raise ValueError("tool arguments must be a JSON object")
+    return args
+
+
 class Chat:
     def __init__(
         self,
@@ -133,11 +144,16 @@ class Chat:
             for call in message.tool_calls:
                 name = call.function.name
                 try:
-                    args = json.loads(call.function.arguments or "{}")
-                except json.JSONDecodeError:
-                    args = {}
+                    args = _parse_tool_arguments(call.function.arguments)
+                except (ValueError, TypeError):
+                    args = None
 
-                if name in index:
+                if args is None:
+                    content = json.dumps({
+                        "error": f"tool '{name}' arguments must be a valid JSON object; "
+                        "tool was not executed. Correct the arguments and try again.",
+                    })
+                elif name in index:
                     client, schema = index[name]
                     try:
                         content = await self._run_tool(client, name, schema, args)

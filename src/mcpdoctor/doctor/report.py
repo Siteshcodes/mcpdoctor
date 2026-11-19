@@ -98,6 +98,13 @@ def degraded_banner_lines(degraded: list[str] | None) -> list[str]:
     return list(degraded) if degraded else []
 
 
+def _gain_text(points: float) -> str:
+    """Keep fractional gains visible, including gains below display precision."""
+    if 0 < points < 0.01:
+        return "<0.01"
+    return f"+{points:.2f}".rstrip("0").rstrip(".")
+
+
 def _header_lines(manifest: Manifest, results: list[CheckResult]) -> list[str]:
     lines = []
     for server in manifest.servers:
@@ -153,7 +160,7 @@ def render_text(
         lines.append("Top fixes (by points recovered):")
         for i, (r, delta) in enumerate(fixes, 1):
             lines.append(
-                f"  {i}. {display_target(r, multi)} - {display_hint(r.fix_hint)} (+{delta:.0f})"
+                f"  {i}. {display_target(r, multi)} - {display_hint(r.fix_hint)} ({_gain_text(delta)})"
             )
 
     if notes:
@@ -243,7 +250,7 @@ def build_rich(
                 f" {i}. {display_target(r, multi)} — {display_hint(r.fix_hint)} ",
                 style="default",
             )
-            fix_text.append(f"(+{delta:.0f})\n", style="green")
+            fix_text.append(f"({_gain_text(delta)})\n", style="green")
         blocks.append(fix_text)
 
     if notes:
@@ -341,7 +348,7 @@ def render_markdown(
         out.append("## Top fixes (by points recovered)")
         for i, (r, delta) in enumerate(fixes, 1):
             out.append(
-                f"{i}. **{display_target(r, multi)}** — {display_hint(r.fix_hint)} (+{delta:.0f})"
+                f"{i}. **{display_target(r, multi)}** — {display_hint(r.fix_hint)} ({_gain_text(delta)})"
             )
         out.append("")
 

@@ -28,6 +28,19 @@ These opt-in tests may download the filesystem server through `npx` and contact 
 when a key is available. Provider failures can skip the judge test. Mocked tests do not
 establish live provider availability.
 
+To validate OpenAI tool calling, repair, and `/doctor` specifically:
+
+```bash
+uv run pytest -m live tests/test_live_openai.py -v -s
+```
+
+This test loads your local `.env` and uses real OpenAI requests against
+`fixtures/otherserver.py`. It verifies tool results, injects a bad date to test repair,
+audits through fresh sessions, checks the probe budget, and calls a tool again through
+the original chat session. It makes at most 32 OpenAI requests and requires API quota.
+Missing credentials skip the test; provider failures or degraded audits fail it.
+The default suite excludes this test and mocks its provider calls elsewhere.
+
 ## Website preview
 
 ```bash
